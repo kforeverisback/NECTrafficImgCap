@@ -5,8 +5,54 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:TSUImageCollectSystem"
         mc:Ignorable="d"
-        Title="MainWindow" Height="350" Width="525">
-    <Grid>
-        
-    </Grid>
+        Title="MainWindow" Height="450" Width="550" ResizeMode="NoResize" Background="#FFD6D6D6"
+        DataContext="{StaticResource mainVM}">
+    <Window.Resources>
+        <Style x:Key="txtBoxStyle" TargetType="TextBox">
+            <Setter Property="Foreground" Value="Crimson"></Setter>
+            <Setter Property="TextAlignment" Value="Center"></Setter>
+            <Setter Property="FontWeight" Value="DemiBold"></Setter>
+            <Setter Property="VerticalContentAlignment" Value="Center"></Setter>
+        </Style>
+    </Window.Resources>
+    <StackPanel Margin="5">
+        <Label FontSize="25" FontWeight="DemiBold" Foreground="Crimson" Content="Status Will be shown here"/>
+        <Separator Margin="0,5,0,5"/>
+        <GroupBox Header="Baumer Cam System" DataContext="{Binding BVM}">
+            <StackPanel Margin="5">
+                <UniformGrid Columns="3" Height="30">
+                    <Button Content="Start Baumer Cam" IsEnabled="{Binding StartBaumerEnabled}" Command="{Binding StartBaumerCommand}" Grid.Column="0"/>
+                    <Button Content="Stop Baumer Cam" Command="{Binding StopBaumerCommand}" Grid.Column="1" IsEnabled="{Binding StopBaumerEnabled}"/>
+                    <Button Content="Capture Single" IsEnabled="{Binding CaptureBaumerEnabled}" Command="{Binding CaptureBaumerCommand}" Grid.Column="2"/>
+                </UniformGrid>
+                <GroupBox Header="Options">
+                    <UniformGrid Columns="4" Rows="2">
+                        <Label Content="Shot Count: "/>
+                        <TextBox Style="{StaticResource txtBoxStyle}" Margin="0,0,5,0" Text="100"/>
+                        <Label Content="Sleep b4(ms): "/>
+                        <TextBox Style="{StaticResource txtBoxStyle}" Text="100" Margin="0,0,5,0"/>
+                        <Label Content="Sleep after(ms): "/>
+                        <TextBox Style="{StaticResource txtBoxStyle}" Margin="0,0,5,0" Text="10"/>
+                    </UniformGrid>
+                </GroupBox>
+            </StackPanel>
+        </GroupBox>
+        <Separator Margin="0,5,0,5"></Separator>
+        <GroupBox Header="Sick Sensor System">
+            <StackPanel Margin="5">
+                <UniformGrid Columns="3" Height="30">
+                <Button Content="Start Sick Sensor" Grid.Column="0"/>
+                    <Button Content="Stop Sensor" Grid.Column="1"/>
+                </UniformGrid>
+                <GroupBox Header="Options">
+                    <UniformGrid Columns="4">
+                        <Label Content="Total Data read: "/>
+                        <TextBox Style="{StaticResource txtBoxStyle}" IsReadOnly="True" Margin="0,0,5,0" Text="100"/>
+                        <Label Content="Data Checking: "/>
+                        <TextBox Style="{StaticResource txtBoxStyle}" Text="5" Margin="0,0,5,0"/>
+                    </UniformGrid>
+                </GroupBox>
+            </StackPanel>
+        </GroupBox>
+    </StackPanel>
 </Window>

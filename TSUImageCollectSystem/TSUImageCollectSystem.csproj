@@ -16,7 +16,7 @@
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
+    <PlatformTarget>x86</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
@@ -26,7 +26,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
+    <PlatformTarget>x86</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
@@ -35,8 +35,14 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="bgapi2_genicam_dotnet, Version=2.3.7670.7763, Culture=neutral, processorArchitecture=AMD64">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\Components\Dev\C_Sharp\Win32\bgapi2_genicam_dotnet.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Interactivity, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
     <Reference Include="System.Xml" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Core" />
@@ -55,6 +61,11 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Helpers\Log.cs" />
+    <Compile Include="DeviceSystems\BaumerSystem.cs" />
+    <Compile Include="Helpers\Utility.cs" />
+    <Compile Include="ViewModel\BaumerVM.cs" />
+    <Compile Include="ViewModel\MainVM.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -63,6 +74,37 @@
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Galasoft\Command\EventToCommand.cs" />
+    <Compile Include="Galasoft\Command\IEventArgsConverter.cs" />
+    <Compile Include="Galasoft\Command\RelayCommand.cs" />
+    <Compile Include="Galasoft\Command\RelayCommandGeneric.cs" />
+    <Compile Include="Galasoft\Helpers\DesignerPlatformLibrary.cs" />
+    <Compile Include="Galasoft\Helpers\Empty.cs" />
+    <Compile Include="Galasoft\Helpers\FeatureDetection.cs" />
+    <Compile Include="Galasoft\Helpers\IExecuteWithObject.cs" />
+    <Compile Include="Galasoft\Helpers\IExecuteWithObjectAndResult.cs" />
+    <Compile Include="Galasoft\Helpers\WeakAction.cs" />
+    <Compile Include="Galasoft\Helpers\WeakActionGeneric.cs" />
+    <Compile Include="Galasoft\Helpers\WeakFunc.cs" />
+    <Compile Include="Galasoft\Helpers\WeakFuncGeneric.cs" />
+    <Compile Include="Galasoft\ICleanup.cs" />
+    <Compile Include="Galasoft\Messaging\DialogMessage.cs" />
+    <Compile Include="Galasoft\Messaging\GenericMessage.cs" />
+    <Compile Include="Galasoft\Messaging\IMessenger.cs" />
+    <Compile Include="Galasoft\Messaging\MessageBase.cs" />
+    <Compile Include="Galasoft\Messaging\Messenger.cs" />
+    <Compile Include="Galasoft\Messaging\NotificationMessage.cs" />
+    <Compile Include="Galasoft\Messaging\NotificationMessageAction.cs" />
+    <Compile Include="Galasoft\Messaging\NotificationMessageActionGeneric.cs" />
+    <Compile Include="Galasoft\Messaging\NotificationMessageGeneric.cs" />
+    <Compile Include="Galasoft\Messaging\NotificationMessageWithCallback.cs" />
+    <Compile Include="Galasoft\Messaging\PropertyChangedMessage.cs" />
+    <Compile Include="Galasoft\Messaging\PropertyChangedMessageBase.cs" />
+    <Compile Include="Galasoft\ObservableObject.cs" />
+    <Compile Include="Galasoft\Threading\DispatcherHelper.cs" />
+    <Compile Include="Galasoft\ViewModelBase.cs" />
+    <Compile Include="Galasoft\Views\IDialogService.cs" />
+    <Compile Include="Galasoft\Views\INavigationService.cs" />
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>

@@ -13,5 +13,14 @@ namespace TSUImageCollectSystem
 	/// </summary>
 	public partial class App : Application
 	{
+		public App()
+		{
+			this.Startup += (s, e) => 
+			{
+				System.IO.File.Delete(System.IO.Path.Combine(Environment.CurrentDirectory, "Log.txt"));
+				Helpers.Log.UseSensibleDefaults("Log.txt", Environment.CurrentDirectory, Helpers.eloglevel.info);
+				Helpers.Log.LogWhere = Helpers.elogwhere.file_and_console;
+			};
+		}
 	}
 }

@@ -15,6 +15,10 @@ using System.Windows.Shapes;
 
 namespace TSUImageCollectSystem
 {
+	using GalaSoft.MvvmLight;
+	using GalaSoft.MvvmLight.Command;
+	using GalaSoft.MvvmLight.Messaging;
+
 	/// <summary>
 	/// Interaction logic for MainWindow.xaml
 	/// </summary>
@@ -23,6 +27,7 @@ namespace TSUImageCollectSystem
 		public MainWindow()
 		{
 			InitializeComponent();
+
 		}
 	}
 }
