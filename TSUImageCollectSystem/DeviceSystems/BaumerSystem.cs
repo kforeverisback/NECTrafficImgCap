@@ -85,11 +85,13 @@ namespace TSUImageCollectSystem.DeviceSystems
 		#endregion
 
 		public static int InternalBufferCount = 4;
+		public int TotalImageShot { get; private set; }
 		
 		public BaumerSystem()
 		{
 			Status = BaumerStatus.Uninitiated;
 			Parameters = new BaumerSystemParameters();
+			TotalImageShot = 0;
 		}
 		public BaumerStatus Status { get; private set; }
 		public BaumerSystemParameters Parameters { get; private set; }
@@ -708,8 +710,6 @@ namespace TSUImageCollectSystem.DeviceSystems
 			IsProcessing = false;
 		}
 
-		string fmt = "output_{0}.bmp";
-		int c = 0;
 		public bool CaptureAndSaveSingleFrame(int captureTrial = 5)
 		{
 			Status = BaumerStatus.Capturing;
@@ -896,10 +896,5 @@ namespace TSUImageCollectSystem.DeviceSystems
 			return i <= captureTrial;
 		}
 
-		void CaptureAndSaveFrames(int frameCount)
-		{
-			Status = BaumerStatus.Capturing;
-			Status = BaumerStatus.Ready;
-		}
 	}
 }

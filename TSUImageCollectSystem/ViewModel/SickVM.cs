@@ -119,7 +119,7 @@ namespace TSUImageCollectSystem.ViewModel
 			SetReference = new RelayCommand(() =>
 			{
 				_ss.SetReference = true;
-				Task.Delay(10);
+				System.Threading.Thread.Sleep(10);
 			});
 		}
 	}

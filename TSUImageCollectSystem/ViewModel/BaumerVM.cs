@@ -15,12 +15,23 @@ namespace TSUImageCollectSystem.ViewModel
 	{
 		BaumerSystem _bs;
 		//ImageGroupingManager _grpManager;
+		public int TotalImageShot
+		{ get { return _bs.TotalImageShot; } }
+
+		public int TotalCarCount
+		{ get { return (int)(_bs.TotalImageShot / 10) ; } }
+
+		public int TotalGroupCount
+		{ get { return (int)((_bs.TotalImageShot / 10)/10); } }
 
 		public BaumerVM	()
 		{
 			_bs = new BaumerSystem();
 			_bs.ImageFileWritten += (path) => 
 			{
+				RaisePropertyChanged("TotalImageShot");
+				RaisePropertyChanged("TotalCarCount");
+				RaisePropertyChanged("TotalGroupCount");
 				//_grpManager.QueueImageFile(path);
 			};
 			//_grpManager = new ImageGroupingManager(carsPerGroup: 10, imagesPerCar: _bs.Parameters.BatchCaptureCount);
@@ -47,6 +58,9 @@ namespace TSUImageCollectSystem.ViewModel
 			{
 				StopBaumerEnabled = false;
 				CaptureBaumerEnabled = false;
+				//Send to LED
+				Messenger.Default.Send<Gardasoft.Controller.API.Model.Register.ChannelMode>(Gardasoft.Controller.API.Model.Register.ChannelMode.Continuous);
+				//Send to SICK
 				Messenger.Default.Send<SickVM.Resp>(SickVM.Resp.Capturing);
 				await Task.Factory.StartNew(() =>
 				{
@@ -57,6 +71,7 @@ namespace TSUImageCollectSystem.ViewModel
 						}
 				});
 				Messenger.Default.Send<SickVM.Resp>(SickVM.Resp.CapturingFinished);
+				Messenger.Default.Send<Gardasoft.Controller.API.Model.Register.ChannelMode>(Gardasoft.Controller.API.Model.Register.ChannelMode.Switched);
 				StopBaumerEnabled = true;
 				CaptureBaumerEnabled = true;
 			}/*, ()=> { return !_bs.IsProcessing && (_bs.Status == BaumerStatus.Ready && _bs.Status != BaumerStatus.Capturing); }*/);

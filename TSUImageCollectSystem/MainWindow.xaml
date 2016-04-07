@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:TSUImageCollectSystem"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="550" ResizeMode="NoResize" Background="#FFD6D6D6"
+        Title="MainWindow" Height="550" Width="550" ResizeMode="NoResize" Background="#FFD6D6D6"
         DataContext="{StaticResource mainVM}">
     <Window.Resources>
         <Style x:Key="txtBoxStyle" TargetType="TextBox">
@@ -16,7 +16,17 @@
         </Style>
     </Window.Resources>
     <StackPanel Margin="5">
-        <Label FontSize="25" FontWeight="DemiBold" Foreground="Crimson" Content="Status Will be shown here"/>
+        <UniformGrid Columns="2" DataContext="{Binding BVM}">
+            <Label FontSize="25" FontWeight="DemiBold" Foreground="Crimson" Content="Status Idle"/>
+            <TextBlock FontSize="12">
+                <Run Text="{Binding TotalImageShot, Mode=OneWay}" FontWeight="ExtraBold"/>
+                <Run Text=" Images, "/>
+                <Run Text="{Binding TotalCarCount, Mode=OneWay}" FontWeight="ExtraBold"/>
+                <Run Text=" Cars, "/>
+                <Run Text="{Binding TotalGroupCount, Mode=OneWay}" FontWeight="ExtraBold"/>
+                <Run Text=" Groups"/>
+            </TextBlock>
+        </UniformGrid>
         <Separator Margin="0,5,0,5"/>
         <GroupBox Header="Baumer Cam System" DataContext="{Binding BVM}">
             <StackPanel Margin="5">
@@ -38,11 +48,11 @@
                 </GroupBox>
             </StackPanel>
         </GroupBox>
-        <Separator Margin="0,5,0,5"></Separator>
+        <Separator Margin="0,5,0,5"/>
         <GroupBox Header="Sick Sensor System" DataContext="{Binding SVM}">
             <StackPanel Margin="5">
                 <UniformGrid Columns="3" Height="30">
-                <Button Margin="5,0,5,0" Content="Start Sick Sensor" IsEnabled="{Binding SICKStartBtnEnabled}" Command="{Binding StartSickSensor}" Grid.Column="0"/>
+                    <Button Margin="5,0,5,0" Content="Start Sick Sensor" IsEnabled="{Binding SICKStartBtnEnabled}" Command="{Binding StartSickSensor}" Grid.Column="0"/>
                     <Button Margin="5,0,5,0" Content="Stop Sensor" IsEnabled="{Binding SICKStopBtnEnabled}" Command="{Binding StopSickSensor}" Grid.Column="1"/>
                     <Button Margin="5,0,5,0" Content="Set Reference" IsEnabled="{Binding SICKReferenceBtnEnabled}" Command="{Binding SetReference}" Grid.Column="1"/>
                 </UniformGrid>
@@ -54,6 +64,38 @@
                         <TextBox Style="{StaticResource txtBoxStyle}" Text="{Binding DataCountUsed, Mode=TwoWay, FallbackValue=5, UpdateSourceTrigger=LostFocus}" Margin="0,0,5,0"/>
                     </UniformGrid>
                 </GroupBox>
+            </StackPanel>
+        </GroupBox>
+        <Separator Margin="0,5,0,5"/>
+        <GroupBox Header="Sick Sensor System" DataContext="{Binding GVM}">
+            <StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <Label Content="LED Controllers:"/>
+                    <ComboBox Margin="5,0,5,0" VerticalAlignment="Center"  ItemsSource="{Binding GardaControllers, UpdateSourceTrigger=PropertyChanged}" Text="Controllers" Width="250" SelectedIndex="{Binding SelectedController, FallbackValue=0}"></ComboBox>
+                    <Button Content="Search for LED" Command="{Binding SearchGarda}" IsEnabled="{Binding SearchBtnEnalbed}"/>
+                    <Button Margin="5,0,5,0" Content="Close LED" Command="{Binding CloseGarda}" IsEnabled="{Binding CloseBtnEnalbed}"/>
+                </StackPanel>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="141*"/>
+                        <ColumnDefinition Width="311*"/>
+                        <ColumnDefinition Width="70*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition/>
+                        <RowDefinition/>
+                        <RowDefinition/>
+                        <RowDefinition/>
+                        <RowDefinition/>
+                    </Grid.RowDefinitions>
+                    <Label Content="Channels:" Grid.Column="0"/>
+                    <ComboBox  VerticalAlignment="Center" HorizontalAlignment="Left" Text="Channels" Width="250" Grid.Column="1" SelectedIndex="{Binding SelectedChannel, FallbackValue=0}" ItemsSource="{Binding GardaChannels}" IsEnabled="False" />
+                    <Label Content="Brightness" Grid.Column="0" Grid.Row="1"/>
+                    <Slider Grid.Column="1" VerticalAlignment="Center" Grid.Row="1" Height="22" IsEnabled="{Binding BrightneseEnabled}" Value="{Binding BrightnessValue, UpdateSourceTrigger=Default, Mode=OneWayToSource, FallbackValue=100}" Minimum="0" Maximum="100"/>
+                    <Label Content="Mode:" Grid.Column="0" Grid.Row="2"/>
+                    <ComboBox VerticalAlignment="Center" HorizontalAlignment="Left" Text="Modes" Width="250" Grid.Column="1" Grid.Row="2" Height="22" Margin="0,2" ItemsSource="{Binding ChannelModes}" SelectedIndex="{Binding SelectedMode, FallbackValue=0}" IsEnabled="False"></ComboBox>
+                </Grid>
+
             </StackPanel>
         </GroupBox>
     </StackPanel>

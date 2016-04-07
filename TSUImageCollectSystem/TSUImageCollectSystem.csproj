@@ -41,6 +41,18 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\..\Components\Dev\C_Sharp\Win32\bgapi2_genicam_dotnet.dll</HintPath>
     </Reference>
+    <Reference Include="Gardasoft.Controller.API, Version=3.0.0.1032, Culture=neutral, PublicKeyToken=3c364760d6170a1b, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\Program Files\Gardasoft Vision\Triniti\SDK\ReferencedAssemblies\Gardasoft.Controller.API.dll</HintPath>
+    </Reference>
+    <Reference Include="Gardasoft.Device.CommunicationLayer, Version=3.0.0.1032, Culture=neutral, PublicKeyToken=3c364760d6170a1b, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\Program Files\Gardasoft Vision\Triniti\SDK\ReferencedAssemblies\Gardasoft.Device.CommunicationLayer.DLL</HintPath>
+    </Reference>
+    <Reference Include="Gardasoft.Device.Discovery, Version=3.0.0.1032, Culture=neutral, PublicKeyToken=3c364760d6170a1b, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\Program Files\Gardasoft Vision\Triniti\SDK\ReferencedAssemblies\Gardasoft.Device.Discovery.DLL</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
@@ -63,12 +75,14 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="DeviceSystems\GardaSystem.cs" />
     <Compile Include="DeviceSystems\SICKSystem.cs" />
     <Compile Include="Helpers\Log.cs" />
     <Compile Include="DeviceSystems\BaumerSystem.cs" />
     <Compile Include="Helpers\Utility.cs" />
     <Compile Include="ImageGroupingManager.cs" />
     <Compile Include="ViewModel\BaumerVM.cs" />
+    <Compile Include="ViewModel\GardaVM.cs" />
     <Compile Include="ViewModel\MainVM.cs" />
     <Compile Include="ViewModel\SickVM.cs" />
     <Page Include="MainWindow.xaml">
