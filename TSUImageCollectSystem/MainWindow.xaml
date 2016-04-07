@@ -21,35 +21,37 @@
         <GroupBox Header="Baumer Cam System" DataContext="{Binding BVM}">
             <StackPanel Margin="5">
                 <UniformGrid Columns="3" Height="30">
-                    <Button Content="Start Baumer Cam" IsEnabled="{Binding StartBaumerEnabled}" Command="{Binding StartBaumerCommand}" Grid.Column="0"/>
-                    <Button Content="Stop Baumer Cam" Command="{Binding StopBaumerCommand}" Grid.Column="1" IsEnabled="{Binding StopBaumerEnabled}"/>
-                    <Button Content="Capture Single" IsEnabled="{Binding CaptureBaumerEnabled}" Command="{Binding CaptureBaumerCommand}" Grid.Column="2"/>
+                    <Button Margin="5,0,5,0" Content="Start Baumer Cam" IsEnabled="{Binding StartBaumerEnabled}" Command="{Binding StartBaumerCommand}" Grid.Column="0"/>
+                    <Button Margin="5,0,5,0" Content="Stop Baumer Cam" Command="{Binding StopBaumerCommand}" Grid.Column="1" IsEnabled="{Binding StopBaumerEnabled}"/>
+                    <Button Margin="5,0,5,0" Content="Capture Single" IsEnabled="{Binding CaptureBaumerEnabled}" Command="{Binding CaptureBaumerCommand}" Grid.Column="2"/>
                 </UniformGrid>
                 <GroupBox Header="Options">
                     <UniformGrid Columns="4" Rows="2">
                         <Label Content="Shot Count: "/>
-                        <TextBox Style="{StaticResource txtBoxStyle}" Margin="0,0,5,0" Text="100"/>
+                        <TextBox Style="{StaticResource txtBoxStyle}" Margin="0,0,5,0" Text="{Binding BSParameters.BatchCaptureCount, Mode=OneWayToSource, FallbackValue=10,
+                            UpdateSourceTrigger=LostFocus}"/>
                         <Label Content="Sleep b4(ms): "/>
-                        <TextBox Style="{StaticResource txtBoxStyle}" Text="100" Margin="0,0,5,0"/>
+                        <TextBox Style="{StaticResource txtBoxStyle}" Text="{Binding BSParameters.SleepBeforeEachCapture, Mode=OneWayToSource, FallbackValue=0, UpdateSourceTrigger=LostFocus}" Margin="0,0,5,0"/>
                         <Label Content="Sleep after(ms): "/>
-                        <TextBox Style="{StaticResource txtBoxStyle}" Margin="0,0,5,0" Text="10"/>
+                        <TextBox Style="{StaticResource txtBoxStyle}" Margin="0,0,5,0" Text="{Binding BSParameters.SleepAfterEachCapture, Mode=OneWayToSource, FallbackValue=10, UpdateSourceTrigger=LostFocus}"/>
                     </UniformGrid>
                 </GroupBox>
             </StackPanel>
         </GroupBox>
         <Separator Margin="0,5,0,5"></Separator>
-        <GroupBox Header="Sick Sensor System">
+        <GroupBox Header="Sick Sensor System" DataContext="{Binding SVM}">
             <StackPanel Margin="5">
                 <UniformGrid Columns="3" Height="30">
-                <Button Content="Start Sick Sensor" Grid.Column="0"/>
-                    <Button Content="Stop Sensor" Grid.Column="1"/>
+                <Button Margin="5,0,5,0" Content="Start Sick Sensor" IsEnabled="{Binding SICKStartBtnEnabled}" Command="{Binding StartSickSensor}" Grid.Column="0"/>
+                    <Button Margin="5,0,5,0" Content="Stop Sensor" IsEnabled="{Binding SICKStopBtnEnabled}" Command="{Binding StopSickSensor}" Grid.Column="1"/>
+                    <Button Margin="5,0,5,0" Content="Set Reference" IsEnabled="{Binding SICKReferenceBtnEnabled}" Command="{Binding SetReference}" Grid.Column="1"/>
                 </UniformGrid>
                 <GroupBox Header="Options">
                     <UniformGrid Columns="4">
                         <Label Content="Total Data read: "/>
-                        <TextBox Style="{StaticResource txtBoxStyle}" IsReadOnly="True" Margin="0,0,5,0" Text="100"/>
+                        <TextBlock VerticalAlignment="Center" Text="{Binding RefDataAmount, FallbackValue=-1}"/>
                         <Label Content="Data Checking: "/>
-                        <TextBox Style="{StaticResource txtBoxStyle}" Text="5" Margin="0,0,5,0"/>
+                        <TextBox Style="{StaticResource txtBoxStyle}" Text="{Binding DataCountUsed, Mode=TwoWay, FallbackValue=5, UpdateSourceTrigger=LostFocus}" Margin="0,0,5,0"/>
                     </UniformGrid>
                 </GroupBox>
             </StackPanel>

@@ -27,6 +27,8 @@ namespace TSUImageCollectSystem
 		public MainWindow()
 		{
 			InitializeComponent();
+			//DeviceSystems.SICKSystem ss = new DeviceSystems.SICKSystem();
+			//ss.Connect();
 
 		}
 	}

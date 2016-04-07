@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.IO;
 using System.Threading.Tasks;
 
 namespace TSUImageCollectSystem.DeviceSystems
@@ -22,7 +23,18 @@ namespace TSUImageCollectSystem.DeviceSystems
 		public int SleepBeforeEachCapture { get; set; }
 		public int SleepBeforeCaptureBatch { get; set; }
 
-		public BaumerSystemParameters() : this(4, 10, 0, 0)
+		public int ImagesPerCar
+		{
+			get; set;
+		}
+		public int CarsPerGroup { get; set; }
+		public string BasePath { get; private set; }
+
+		public int CarCount = 1;
+		public int CarImageCount = 1;
+		public int GroupCount = 1;
+
+		public BaumerSystemParameters() : this(10, 10, 0, 0)
 		{
 		}
 
@@ -32,6 +44,13 @@ namespace TSUImageCollectSystem.DeviceSystems
 			int _SleepBeforeEachCapture,
 			int _SleepBeforeCaptureBatch)
 		{
+			BasePath = Path.Combine(Path.Combine(Environment.CurrentDirectory, "output"), DateTime.Today.ToString("yyyy-MM-dd"));
+
+			Directory.CreateDirectory(BasePath);
+
+			ImagesPerCar = 10;
+			CarsPerGroup = 10;
+
 			BatchCaptureCount = _BatchCaptureCount;
 			SleepAfterEachCapture = _SleepAfterEachCapture;
 			SleepBeforeEachCapture = _SleepBeforeCaptureBatch;
@@ -66,11 +85,17 @@ namespace TSUImageCollectSystem.DeviceSystems
 		#endregion
 
 		public static int InternalBufferCount = 4;
-
-		public BaumerSystem() { Status = BaumerStatus.Uninitiated; Parameters = new BaumerSystemParameters(); }
+		
+		public BaumerSystem()
+		{
+			Status = BaumerStatus.Uninitiated;
+			Parameters = new BaumerSystemParameters();
+		}
 		public BaumerStatus Status { get; private set; }
 		public BaumerSystemParameters Parameters { get; private set; }
 		public bool IsProcessing { get; private set; }
+		public delegate void ImageFileWrittenDelegate(string path);
+		public event ImageFileWrittenDelegate ImageFileWritten;
 		bool LoadImageProcessor()
 		{
 			//LOAD IMAGE PROCESSOR
@@ -538,15 +563,23 @@ namespace TSUImageCollectSystem.DeviceSystems
 			if (Status == BaumerStatus.Ready)
 				return true;
 
-			if (LoadImageProcessor())
+			try
 			{
-				OpenFirstSystemInCamList();
-				OpenFirstCamera();
-				AcquisitionStart();
+				if (LoadImageProcessor())
+				{
+					OpenFirstSystemInCamList();
+					OpenFirstCamera();
+					AcquisitionStart();
+				}
+				else
+				{
+					IsProcessing = false;
+					return false;
+				}
 			}
-			else
+			catch (Exception ex)
 			{
-				IsProcessing = false;
+				Helpers.Log.LogThisError("General Exception: {0}", ex.Message);
 				return false;
 			}
 
@@ -682,86 +715,181 @@ namespace TSUImageCollectSystem.DeviceSystems
 			Status = BaumerStatus.Capturing;
 			BGAPI2.Buffer mBufferFilled = null;
 			int i = 0;
-			try
+			IsProcessing = true;
+			//for(int x = 0; x < Parameters.BatchCaptureCount; x++)
 			{
-				IsProcessing = true;
-
-				mDataStream.BufferList.FlushAllToInputQueue();
-				for (i = 0; i < captureTrial; i++)
+				try
 				{
-					mBufferFilled = mDataStream.GetFilledBuffer(1000); // image polling timeout 1000 msec
-					if (mBufferFilled == null)
+					mDataStream.BufferList.FlushAllToInputQueue();
+					//mDataStream.BufferList.FlushInputToOutputQueue();
+					//mDataStream.BufferList.FlushUnqueuedToInputQueue();
+					for (i = 0; i < captureTrial; i++)
 					{
-						System.Console.Write("Error: Buffer Timeout after 1000 msec\n");
-					}
-					else if (mBuffer.IsIncomplete == true)
-					{
-						System.Console.Write("Error: Image is incomplete\n");
-						// queue buffer again
-						mBufferFilled.QueueBuffer();
-					}
-					else
-					{
-						Helpers.Log.LogThisInfo(" Image {0, 5:d}@t={2, 5:d} received in memory address {1:X}\n", mBufferFilled.FrameID, (ulong)mBufferFilled.MemPtr, mBufferFilled.Timestamp);
+						mBufferFilled = mDataStream.GetFilledBuffer(1000); // image polling timeout 1000 msec
+						if (mBufferFilled == null)
+						{
+							System.Console.Write("Error: Buffer Timeout after 1000 msec\n");
+						}
+						else if (mBufferFilled.IsIncomplete == true)
+						{
+							System.Console.Write("Error: Image is incomplete\n");
+							// queue buffer again
+							mBufferFilled.QueueBuffer();
+						}
+						else if (ImageFileWritten != null)
+						{
+							Helpers.Log.LogThisInfo(" Image {0, 5:d}@t={2, 5:d} received in memory address {1:X}\n", mBufferFilled.FrameID, (ulong)mBufferFilled.MemPtr, mBufferFilled.Timestamp);
 
-						//create an image object from the filled buffer and convert it
-						//BGAPI2.Image mTransformImage = null;
-						//BGAPI2.Image mImage = imgProcessor.CreateImage((uint)mBufferFilled.Width, (uint)mBufferFilled.Height, (string)mBufferFilled.PixelFormat, mBufferFilled.MemPtr, (ulong)mBufferFilled.MemSize);
-						//System.Console.Write("  mImage.Pixelformat:             {0}\n", mImage.PixelFormat);
-						//System.Console.Write("  mImage.Width:                   {0}\n", mImage.Width);
-						//System.Console.Write("  mImage.Height:                  {0}\n", mImage.Height);
-						//System.Console.Write("  mImage.Buffer:                  {0:X8}\n", (ulong)mImage.Buffer);
+							//create an image object from the filled buffer and convert it
+							//BGAPI2.Image mTransformImage = null;
+							//BGAPI2.Image mImage = imgProcessor.CreateImage((uint)mBufferFilled.Width, (uint)mBufferFilled.Height, (string)mBufferFilled.PixelFormat, mBufferFilled.MemPtr, (ulong)mBufferFilled.MemSize);
+							//System.Console.Write("  mImage.Pixelformat:             {0}\n", mImage.PixelFormat);
+							//System.Console.Write("  mImage.Width:                   {0}\n", mImage.Width);
+							//System.Console.Write("  mImage.Height:                  {0}\n", mImage.Height);
+							//System.Console.Write("  mImage.Buffer:                  {0:X8}\n", (ulong)mImage.Buffer);
 
-						//double fBytesPerPixel = (double)mImage.NodeList["PixelFormatBytes"].Value;
-						//System.Console.Write("  Bytes per image:                {0}\n", (long)((uint)mImage.Width * (uint)mImage.Height * fBytesPerPixel));
-						//System.Console.Write("  Bytes per pixel:                {0}\n", fBytesPerPixel);
+							//double fBytesPerPixel = (double)mImage.NodeList["PixelFormatBytes"].Value;
+							//System.Console.Write("  Bytes per image:                {0}\n", (long)((uint)mImage.Width * (uint)mImage.Height * fBytesPerPixel));
+							//System.Console.Write("  Bytes per pixel:                {0}\n", fBytesPerPixel);
+							int w = (int)mBufferFilled.Width, h = (int)mBufferFilled.Height;
 
-						int w = (int)mBufferFilled.Width, h = (int)mBufferFilled.Height;
+							System.Drawing.Bitmap bb = Helpers.Utility.GetGrayBitmap(w, h, w * h, mBufferFilled.MemPtr);
 
-						System.Drawing.Bitmap bb = Helpers.Utility.GetGrayBitmap(w, h, w * h, mBufferFilled.MemPtr);
+							mBufferFilled.QueueBuffer();
+							mDataStream.CancelGetFilledBuffer();
+							string tempFilePath = System.IO.Path.GetTempFileName() + ".bmp";
+							bb.Save(tempFilePath, System.Drawing.Imaging.ImageFormat.Bmp);
 
-						mBufferFilled.QueueBuffer();
-						mDataStream.CancelGetFilledBuffer();
-						bb.Save(string.Format(fmt, c++), System.Drawing.Imaging.ImageFormat.Bmp);
+							//event
+							ImageFileWritten(tempFilePath);
 
-						//System.Drawing.Bitmap bb = Helpers.Utility.GetGrayBitmap((int)mImage.Width, (int)mImage.Height, (int)(mImage.Width * (uint)mImage.Height * fBytesPerPixel), mImage.Buffer);
+							//System.Drawing.Bitmap bb = Helpers.Utility.GetGrayBitmap((int)mImage.Width, (int)mImage.Height, (int)(mImage.Width * (uint)mImage.Height * fBytesPerPixel), mImage.Buffer);
 
-						//bb.Save("output.bmp", System.Drawing.Imaging.ImageFormat.Bmp);
-						//break;
-						//COPY UNMANAGED IMAGEBUFFER TO A MANAGED BYTE ARRAY
-						//imageBufferCopy = new byte[(uint)((uint)mImage.Width * (uint)mImage.Height * fBytesPerPixel)];
-						//Marshal.Copy(mImage.Buffer, imageBufferCopy, 0, (int)((int)mImage.Width * (int)mImage.Height * fBytesPerPixel));
-						//ulong imageBufferAddress = (ulong)mImage.Buffer;
+							//bb.Save("output.bmp", System.Drawing.Imaging.ImageFormat.Bmp);
+							//break;
+							//COPY UNMANAGED IMAGEBUFFER TO A MANAGED BYTE ARRAY
+							//imageBufferCopy = new byte[(uint)((uint)mImage.Width * (uint)mImage.Height * fBytesPerPixel)];
+							//Marshal.Copy(mImage.Buffer, imageBufferCopy, 0, (int)((int)mImage.Width * (int)mImage.Height * fBytesPerPixel));
+							//ulong imageBufferAddress = (ulong)mImage.Buffer;
 
-						//// display first 6 pixel values of first 6 lines of the image
-						////========================================================================
-						//System.Console.Write("  Address\n");
-						//for (int j = 0; j < 6; j++) // first 6 lines
-						//{
-						//	imageBufferAddress = (ulong)mImage.Buffer + (ulong)((int)mImage.Width * (int)j * fBytesPerPixel);
-						//	System.Console.Write("  {0:X8} ", imageBufferAddress);
-						//	for (int k = 0; k < (int)(6 * fBytesPerPixel); k++) // bytes of first 6 pixels of that line
-						//	{
-						//		System.Console.Write(" {0:X2}", imageBufferCopy[(uint)(mImage.Width * j * fBytesPerPixel) + k]); // byte 
-						//	}
-						//	System.Console.Write(" ...\n");
-						//}
+							//// display first 6 pixel values of first 6 lines of the image
+							////========================================================================
+							//System.Console.Write("  Address\n");
+							//for (int j = 0; j < 6; j++) // first 6 lines
+							//{
+							//	imageBufferAddress = (ulong)mImage.Buffer + (ulong)((int)mImage.Width * (int)j * fBytesPerPixel);
+							//	System.Console.Write("  {0:X8} ", imageBufferAddress);
+							//	for (int k = 0; k < (int)(6 * fBytesPerPixel); k++) // bytes of first 6 pixels of that line
+							//	{
+							//		System.Console.Write(" {0:X2}", imageBufferCopy[(uint)(mImage.Width * j * fBytesPerPixel) + k]); // byte 
+							//	}
+							//	System.Console.Write(" ...\n");
+							//}
 
-						//System.Console.Write(" \n");
-						//if (mImage != null) mImage.Release();
-						//if (mTransformImage != null) mTransformImage.Release();
+							//System.Console.Write(" \n");
+							//if (mImage != null) mImage.Release();
+							//if (mTransformImage != null) mTransformImage.Release();
 
-						// queue buffer again
-						break;
+							// queue buffer again
+							break;
+						}
 					}
 				}
+				catch (BGAPI2.Exceptions.IException ex)
+				{
+					System.Console.Write("ExceptionType:    {0} \n", ex.GetType());
+					System.Console.Write("ErrorDescription: {0} \n", ex.GetErrorDescription());
+					System.Console.Write("in function:      {0} \n", ex.GetFunctionName());
+				}
 			}
-			catch (BGAPI2.Exceptions.IException ex)
+			
+			System.Console.Write("\n");
+			Status = BaumerStatus.Ready;
+			IsProcessing = false;
+			return i <= captureTrial;
+		}
+
+		public bool CaptureInBatch(int captureTrial = 10)
+		{
+			Status = BaumerStatus.Capturing;
+			BGAPI2.Buffer mBufferFilled = null;
+			int i = 0;
+			IsProcessing = true;
+			if(Parameters.SleepBeforeCaptureBatch != 0)
 			{
-				System.Console.Write("ExceptionType:    {0} \n", ex.GetType());
-				System.Console.Write("ErrorDescription: {0} \n", ex.GetErrorDescription());
-				System.Console.Write("in function:      {0} \n", ex.GetFunctionName());
+				System.Threading.Thread.Sleep(Parameters.SleepBeforeCaptureBatch);
 			}
+
+			if (Parameters.CarCount > Parameters.CarsPerGroup) { Parameters.CarCount = 1; Parameters.GroupCount++; }
+			Parameters.CarImageCount = 1;
+
+			string grpCarPath = Path.Combine(Parameters.BasePath, string.Format("Group-{0}\\car-{1}", Parameters.GroupCount, Parameters.CarCount++));
+			Directory.CreateDirectory(grpCarPath);
+			for (int x = 0; x < Parameters.BatchCaptureCount; x++)
+			{
+				try
+				{
+
+					if (Parameters.SleepBeforeEachCapture != 0)
+					{
+						System.Threading.Thread.Sleep(Parameters.SleepBeforeEachCapture);
+					}
+
+					for (i = 0; i < captureTrial; i++)
+					{
+						mDataStream.BufferList.FlushAllToInputQueue();
+						System.Diagnostics.Debug.WriteLine("Trial {0}", i);
+						mBufferFilled = mDataStream.GetFilledBuffer(1000); // image polling timeout 1000 msec
+						if (mBufferFilled == null)
+						{
+							System.Diagnostics.Debug.WriteLine("Error: Buffer Timeout after 1000 msec");
+						}
+						else if (mBufferFilled.IsIncomplete == true)
+						{
+							System.Diagnostics.Debug.WriteLine("Error: Image is incomplete");
+							// queue buffer again
+							mBufferFilled.QueueBuffer();
+						}
+						else
+						{
+							//Helpers.Log.LogThisInfo(" Image {0, 5:d}@t={2, 5:d} received in memory address {1:X}\n", mBufferFilled.FrameID, (ulong)mBufferFilled.MemPtr, mBufferFilled.Timestamp);
+
+							int w = (int)mBufferFilled.Width, h = (int)mBufferFilled.Height;
+
+							System.Drawing.Bitmap bb = Helpers.Utility.GetGrayBitmap(w, h, w * h, mBufferFilled.MemPtr);
+
+							string destFilePath = Path.Combine(grpCarPath, string.Format("car-image-{0}.bmp", Parameters.CarImageCount++));
+							Task.Factory.StartNew(() => 
+							{
+								bb.Save(destFilePath, System.Drawing.Imaging.ImageFormat.Bmp);
+							});
+							
+							mBufferFilled.QueueBuffer();
+							mDataStream.CancelGetFilledBuffer();
+
+							//event
+							if(ImageFileWritten != null)
+								ImageFileWritten(destFilePath);
+
+							break;
+						}
+					}
+					//mDataStream.BufferList.FlushInputToOutputQueue();
+
+					if (Parameters.SleepAfterEachCapture != 0)
+					{
+						System.Threading.Thread.Sleep(Parameters.SleepAfterEachCapture);
+						//Task.Delay(Parameters.SleepAfterEachCapture);
+					}
+				}
+				catch (BGAPI2.Exceptions.IException ex)
+				{
+					System.Console.Write("ExceptionType:    {0} \n", ex.GetType());
+					System.Console.Write("ErrorDescription: {0} \n", ex.GetErrorDescription());
+					System.Console.Write("in function:      {0} \n", ex.GetFunctionName());
+				}
+			}
+			
 			System.Console.Write("\n");
 			Status = BaumerStatus.Ready;
 			IsProcessing = false;

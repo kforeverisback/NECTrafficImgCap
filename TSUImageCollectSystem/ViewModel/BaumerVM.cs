@@ -14,9 +14,17 @@ namespace TSUImageCollectSystem.ViewModel
 	class BaumerVM : ViewModelBase
 	{
 		BaumerSystem _bs;
+		//ImageGroupingManager _grpManager;
+
 		public BaumerVM	()
 		{
 			_bs = new BaumerSystem();
+			_bs.ImageFileWritten += (path) => 
+			{
+				//_grpManager.QueueImageFile(path);
+			};
+			//_grpManager = new ImageGroupingManager(carsPerGroup: 10, imagesPerCar: _bs.Parameters.BatchCaptureCount);
+
 			StartBaumerEnabled = true; StopBaumerEnabled = CaptureBaumerEnabled = false;
 			StartBaumerCommand = new RelayCommand(async ()=>
 			{
@@ -39,17 +47,27 @@ namespace TSUImageCollectSystem.ViewModel
 			{
 				StopBaumerEnabled = false;
 				CaptureBaumerEnabled = false;
-				await Task.Factory.StartNew(() => 
+				Messenger.Default.Send<SickVM.Resp>(SickVM.Resp.Capturing);
+				await Task.Factory.StartNew(() =>
 				{
-					for (int i = 0; i < 50; i++ )
-					{
-						_bs.CaptureAndSaveSingleFrame();
-						Task.Delay(10);
-					}
+						//for (int i = 0; i < 50; i++ )
+						{
+						_bs.CaptureInBatch();
+							//_bs.CaptureAndSaveSingleFrame();
+						}
 				});
+				Messenger.Default.Send<SickVM.Resp>(SickVM.Resp.CapturingFinished);
 				StopBaumerEnabled = true;
 				CaptureBaumerEnabled = true;
 			}/*, ()=> { return !_bs.IsProcessing && (_bs.Status == BaumerStatus.Ready && _bs.Status != BaumerStatus.Capturing); }*/);
+
+			Messenger.Default.Register<SickVM.Cmds>(this, (cmd) => 
+			{
+				if(cmd == SickVM.Cmds.CarIncoming)
+				{
+					CaptureBaumerCommand.Execute(null);
+				}
+			});
 		}
 
 		~BaumerVM()
@@ -82,5 +100,7 @@ namespace TSUImageCollectSystem.ViewModel
 			get { return _CaptureBaumerEnabled; }
 			set { _CaptureBaumerEnabled = value; RaisePropertyChanged("CaptureBaumerEnabled"); }
 		}
+
+		public BaumerSystemParameters BSParameters { get { return _bs.Parameters; } }
 	}
 }
