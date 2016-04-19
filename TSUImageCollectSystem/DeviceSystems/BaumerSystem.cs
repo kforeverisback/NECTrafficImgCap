@@ -27,21 +27,18 @@ namespace TSUImageCollectSystem.DeviceSystems
 		public double ExposureMin { get; set; }
 		public readonly int ImagesPerCar;
 		public readonly int CarsPerGroup;
-		public string BasePath { get; private set; }
+		public string BasePath { get; set; }
 
 		public int CarCount = 0;
 		public int CarImageCount = 0;
 		public int GroupCount = 0;
 
-		public BaumerSystemParameters() : this(10, 10, 0, 0)
+		public BaumerSystemParameters() : this(7)
 		{
 		}
 
 		public BaumerSystemParameters(
-			int _BatchCaptureCount,
-			int _SleepAfterEachCapture,
-			int _SleepBeforeEachCapture,
-			int _SleepBeforeCaptureBatch)
+			int _BatchCaptureCount)
 		{
 			BasePath = Path.Combine(Path.Combine(Environment.CurrentDirectory, "output"), DateTime.Today.ToString("yyyy-MM-dd"));
 
@@ -660,6 +657,7 @@ namespace TSUImageCollectSystem.DeviceSystems
 				Helpers.Log.LogThisError("-->ErrorDescription: {0} ", ex.GetErrorDescription());
 				Helpers.Log.LogThisError("-->in function:      {0} ", ex.GetFunctionName());
 			}
+			Status = BaumerStatus.Ready;
 			return;
 		}
 

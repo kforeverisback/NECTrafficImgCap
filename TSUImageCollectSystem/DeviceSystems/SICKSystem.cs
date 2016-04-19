@@ -140,8 +140,8 @@ namespace TSUImageCollectSystem.DeviceSystems
 			int point = 0;
 			for (int i = 0; i < m_reference.amnt_data && point != MaxPointCount; i++)
 			{
-
-				int diff = (int)m_reference.data[i] > (int)m_current_data.data[i] ? (int)m_reference.data[i] - (int)m_current_data.data[i] : -(int)m_reference.data[i] + (int)m_current_data.data[i];
+				int diff = (int)m_reference.data[i] > (int)m_current_data.data[i] ? (int)m_reference.data[i] - (int)m_current_data.data[i] : 0;
+				//int diff = (int)m_reference.data[i] > (int)m_current_data.data[i] ? (int)m_reference.data[i] - (int)m_current_data.data[i] : -(int)m_reference.data[i] + (int)m_current_data.data[i];
 				if (diff > Threshold)
 					point++;
 			}
@@ -198,7 +198,7 @@ namespace TSUImageCollectSystem.DeviceSystems
 						{
 							//string&& resp = get_response(m_read_bytes, readBytes);
 							//std::cout << resp << endl;
-							if (readBytesCount > 84 && m_read_bytes[1] == 's' && m_read_bytes[2] == 'S' && m_read_bytes[3] == 'N' && !SetReference)
+							if (readBytesCount > 84 && m_read_bytes[1] == 's' && m_read_bytes[2] == 'S' && m_read_bytes[3] == 'N')
 							{
 								m_current_data = get_only_1_scan_data(Encoding.ASCII.GetString(m_read_bytes));
 								if (WillNotify)
@@ -231,7 +231,7 @@ namespace TSUImageCollectSystem.DeviceSystems
 				catch (Exception ex)
 				{
 
-					throw;
+					//throw;
 				}
 			}
 		}

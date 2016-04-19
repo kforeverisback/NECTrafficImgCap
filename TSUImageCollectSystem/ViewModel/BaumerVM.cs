@@ -32,6 +32,15 @@ namespace TSUImageCollectSystem.ViewModel
 			set { _ExposureInMs = _bs.SetExposure(value); RaisePropertyChanged("ExposureInMs"); }
 		}
 
+		public string OutputPath
+		{
+			get { return _bs.Parameters.BasePath; }
+			set {
+				_bs.Parameters.BasePath = value;
+				RaisePropertyChanged("OutputPath");
+			}
+		}
+
 		public BaumerVM()
 		{
 			_bs = new BaumerSystem();
@@ -70,6 +79,8 @@ namespace TSUImageCollectSystem.ViewModel
 
 			CaptureBaumerCommand = new RelayCommand(async () =>
 		   {
+			   if (_bs.Status != BaumerStatus.Ready) return;
+
 			   StopBaumerEnabled = false;
 			   CaptureBaumerEnabled = false;
 			   //Send to LED
@@ -99,6 +110,18 @@ namespace TSUImageCollectSystem.ViewModel
 					CaptureBaumerCommand.Execute(null);
 				}
 			});
+
+			BrowseCommand = new RelayCommand(()=> 
+			{
+				System.Windows.Forms.FolderBrowserDialog fbd = new System.Windows.Forms.FolderBrowserDialog();
+				fbd.ShowNewFolderButton = true;
+				fbd.SelectedPath = _bs.Parameters.BasePath;
+				fbd.Description = "Select Output Folder";
+				if(fbd.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+				{
+					OutputPath = fbd.SelectedPath;
+				}
+			});
 		}
 
 		~BaumerVM()
@@ -109,6 +132,7 @@ namespace TSUImageCollectSystem.ViewModel
 		public RelayCommand StartBaumerCommand { get; private set; }
 		public RelayCommand StopBaumerCommand { get; private set; }
 		public RelayCommand CaptureBaumerCommand { get; private set; }
+		public RelayCommand BrowseCommand { get; private set; }
 
 		bool _StartBaumerEnabled { get; set; }
 		bool _StopBaumerEnabled { get; set; }
