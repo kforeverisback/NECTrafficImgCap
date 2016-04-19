@@ -61,6 +61,12 @@ namespace TSUImageCollectSystem.ViewModel
 				}
 				RaisePropertyChanged("DataCountUsed");
 			} }
+
+
+		public int DelayBetweenCars
+		{
+			get; set;
+		}
 		public int RefDataAmount { get; private set; }
 
 		public SickVM()
@@ -76,25 +82,32 @@ namespace TSUImageCollectSystem.ViewModel
 			_ss.SICKCarIncoming += () => 
 			{
 				Messenger.Default.Send<SickVM.Cmds>(Cmds.CarIncoming);
+				_ss.WillNotify = false;
+				Task.Factory.StartNew(()=> 
+				{
+					System.Threading.Thread.Sleep(DelayBetweenCars);
+					_ss.WillNotify = true;
+				});
 			};
 
-			Messenger.Default.Register<SickVM.Resp>(this, (r) => 
-			{
-				switch(r)
-				{
-					case Resp.Capturing:
-						_ss.WillNotify = false;
-						break;
-					case Resp.CapturingFinished:
-						_ss.WillNotify = true;
-						break;
-				}
-			});
+			//Messenger.Default.Register<SickVM.Resp>(this, (r) => 
+			//{
+			//	switch(r)
+			//	{
+			//		case Resp.Capturing:
+			//			_ss.WillNotify = false;
+			//			break;
+			//		case Resp.CapturingFinished:
+			//			_ss.WillNotify = true;
+			//			break;
+			//	}
+			//});
 
 			RefDataAmount = 0;
 			DataCountUsed = 0;
 			SICKReferenceBtnEnabled = SICKStopBtnEnabled = false;
 			SICKStartBtnEnabled = true;
+			DelayBetweenCars = 2000;
 			StartSickSensor = new RelayCommand(() =>
 			{
 				SICKStartBtnEnabled = false;

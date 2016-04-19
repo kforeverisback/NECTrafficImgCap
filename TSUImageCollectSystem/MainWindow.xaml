@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:TSUImageCollectSystem"
         mc:Ignorable="d"
-        Title="MainWindow" Height="550" Width="550" ResizeMode="NoResize" Background="#FFD6D6D6"
+        Title="MainWindow" Height="350" Width="550" ResizeMode="NoResize" Background="#FFD6D6D6"
         DataContext="{StaticResource mainVM}">
     <Window.Resources>
         <Style x:Key="txtBoxStyle" TargetType="TextBox">
@@ -16,9 +16,8 @@
         </Style>
     </Window.Resources>
     <StackPanel Margin="5">
-        <UniformGrid Columns="2" DataContext="{Binding BVM}">
-            <Label FontSize="25" FontWeight="DemiBold" Foreground="Crimson" Content="Status Idle"/>
-            <TextBlock FontSize="12">
+        <UniformGrid Columns="1" DataContext="{Binding BVM}">
+            <TextBlock FontSize="25" HorizontalAlignment="Center">
                 <Run Text="{Binding TotalImageShot, Mode=OneWay}" FontWeight="ExtraBold"/>
                 <Run Text=" Images, "/>
                 <Run Text="{Binding TotalCarCount, Mode=OneWay}" FontWeight="ExtraBold"/>
@@ -36,15 +35,11 @@
                     <Button Margin="5,0,5,0" Content="Capture Single" IsEnabled="{Binding CaptureBaumerEnabled}" Command="{Binding CaptureBaumerCommand}" Grid.Column="2"/>
                 </UniformGrid>
                 <GroupBox Header="Options">
-                    <UniformGrid Columns="4" Rows="2">
+                    <UniformGrid Columns="4" Rows="1">
                         <Label Content="Shot Count: "/>
                         <TextBox Style="{StaticResource txtBoxStyle}" Margin="0,0,5,0" Text="{Binding BSParameters.BatchCaptureCount, Mode=OneWayToSource, FallbackValue=10,
                             UpdateSourceTrigger=LostFocus}"/>
-                        <Label Content="Sleep b4 batch(ms): "/>
-                        <TextBox Style="{StaticResource txtBoxStyle}" Text="{Binding BSParameters.SleepBeforeCaptureBatch, Mode=OneWayToSource, FallbackValue=0, UpdateSourceTrigger=LostFocus}" Margin="0,0,5,0"/>
-                        <Label Content="Sleep after(ms): "/>
-                        <TextBox Style="{StaticResource txtBoxStyle}" Margin="0,0,5,0" Text="{Binding BSParameters.SleepAfterEachCapture, Mode=OneWayToSource, FallbackValue=10, UpdateSourceTrigger=LostFocus}"/>
-                        <Label Content="Exposure(ms): "/>
+                        <Label Content="Exposure(us): "/>
                         <TextBox Style="{StaticResource txtBoxStyle}" Margin="0,0,5,0" Text="{Binding ExposureInMs, Mode=TwoWay, FallbackValue=4000, UpdateSourceTrigger=LostFocus}"/>
                         
                     </UniformGrid>
@@ -60,17 +55,19 @@
                     <Button Margin="5,0,5,0" Content="Set Reference" IsEnabled="{Binding SICKReferenceBtnEnabled}" Command="{Binding SetReference}" Grid.Column="1"/>
                 </UniformGrid>
                 <GroupBox Header="Options">
-                    <UniformGrid Columns="4">
+                    <UniformGrid Columns="4" Rows="2">
                         <Label Content="Total Data read: "/>
                         <TextBlock VerticalAlignment="Center" Text="{Binding RefDataAmount, FallbackValue=-1}"/>
                         <Label Content="Data Checking: "/>
                         <TextBox Style="{StaticResource txtBoxStyle}" Text="{Binding DataCountUsed, Mode=TwoWay, FallbackValue=5, UpdateSourceTrigger=LostFocus}" Margin="0,0,5,0"/>
+                        <Label Content="Delay btn cars(ms): "/>
+                        <TextBox Style="{StaticResource txtBoxStyle}" Text="{Binding DelayBetweenCars, Mode=OneWayToSource, FallbackValue=2000, UpdateSourceTrigger=LostFocus}" Margin="0,0,5,0"/>
                     </UniformGrid>
                 </GroupBox>
             </StackPanel>
         </GroupBox>
         <Separator Margin="0,5,0,5"/>
-        <GroupBox Header="Sick Sensor System" DataContext="{Binding GVM}">
+        <!--<GroupBox Header="Sick Sensor System" DataContext="{Binding GVM}">
             <StackPanel>
                 <StackPanel Orientation="Horizontal">
                     <Label Content="LED Controllers:"/>
@@ -100,6 +97,6 @@
                 </Grid>
 
             </StackPanel>
-        </GroupBox>
+        </GroupBox>-->
     </StackPanel>
 </Window>
