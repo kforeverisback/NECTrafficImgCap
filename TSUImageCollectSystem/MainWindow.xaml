@@ -40,10 +40,13 @@
                         <Label Content="Shot Count: "/>
                         <TextBox Style="{StaticResource txtBoxStyle}" Margin="0,0,5,0" Text="{Binding BSParameters.BatchCaptureCount, Mode=OneWayToSource, FallbackValue=10,
                             UpdateSourceTrigger=LostFocus}"/>
-                        <Label Content="Sleep b4(ms): "/>
-                        <TextBox Style="{StaticResource txtBoxStyle}" Text="{Binding BSParameters.SleepBeforeEachCapture, Mode=OneWayToSource, FallbackValue=0, UpdateSourceTrigger=LostFocus}" Margin="0,0,5,0"/>
+                        <Label Content="Sleep b4 batch(ms): "/>
+                        <TextBox Style="{StaticResource txtBoxStyle}" Text="{Binding BSParameters.SleepBeforeCaptureBatch, Mode=OneWayToSource, FallbackValue=0, UpdateSourceTrigger=LostFocus}" Margin="0,0,5,0"/>
                         <Label Content="Sleep after(ms): "/>
                         <TextBox Style="{StaticResource txtBoxStyle}" Margin="0,0,5,0" Text="{Binding BSParameters.SleepAfterEachCapture, Mode=OneWayToSource, FallbackValue=10, UpdateSourceTrigger=LostFocus}"/>
+                        <Label Content="Exposure(ms): "/>
+                        <TextBox Style="{StaticResource txtBoxStyle}" Margin="0,0,5,0" Text="{Binding ExposureInMs, Mode=TwoWay, FallbackValue=4000, UpdateSourceTrigger=LostFocus}"/>
+                        
                     </UniformGrid>
                 </GroupBox>
             </StackPanel>

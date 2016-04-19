@@ -107,7 +107,7 @@ namespace TSUImageCollectSystem.DeviceSystems
 			return Encoding.ASCII.GetBytes("\x02" + str + "\x03");
 		}
 
-		static unsafe channel_data_16b get_only_1_scan_data(string data)
+		static channel_data_16b get_only_1_scan_data(string data)
 		{
 			channel_data_16b chdata = new channel_data_16b();
 			string str;

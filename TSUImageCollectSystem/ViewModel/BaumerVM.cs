@@ -19,15 +19,21 @@ namespace TSUImageCollectSystem.ViewModel
 		{ get { return _bs.TotalImageShot; } }
 
 		public int TotalCarCount
-		{ get { return (int)(_bs.TotalImageShot / 10) ; } }
+		{ get { return (int)(_bs.TotalImageShot / 10); } }
 
 		public int TotalGroupCount
-		{ get { return (int)((_bs.TotalImageShot / 10)/10); } }
+		{ get { return (int)((_bs.TotalImageShot / 10) / 10); } }
 
-		public BaumerVM	()
+		public int _ExposureInMs;
+		public int ExposureInMs
+		{ get
+			{ return _ExposureInMs; }
+			set { _ExposureInMs = _bs.SetExposure(value); RaisePropertyChanged("ExposureInMs"); }
+		}
+		public BaumerVM()
 		{
 			_bs = new BaumerSystem();
-			_bs.ImageFileWritten += (path) => 
+			_bs.ImageFileWritten += (path) =>
 			{
 				RaisePropertyChanged("TotalImageShot");
 				RaisePropertyChanged("TotalCarCount");
@@ -37,48 +43,53 @@ namespace TSUImageCollectSystem.ViewModel
 			//_grpManager = new ImageGroupingManager(carsPerGroup: 10, imagesPerCar: _bs.Parameters.BatchCaptureCount);
 
 			StartBaumerEnabled = true; StopBaumerEnabled = CaptureBaumerEnabled = false;
-			StartBaumerCommand = new RelayCommand(async ()=>
+			StartBaumerCommand = new RelayCommand(async () =>
 			{
 				StartBaumerEnabled = false;
-				StartBaumerEnabled = !await Task.Factory.StartNew<bool>(() => {return  _bs.StartBaumerCam(); });
+				StartBaumerEnabled = !await Task.Factory.StartNew<bool>(() => { return _bs.StartBaumerCam(); });
+
+				if (!StartBaumerEnabled)
+					ExposureInMs = (int)_bs.Parameters.ExposureValue;
+				else
+					ExposureInMs = 0;
 				StopBaumerEnabled = !StartBaumerEnabled;
 				CaptureBaumerEnabled = !StartBaumerEnabled;
 			}/*, ()=> { return !_bs.IsProcessing && (_bs.Status == BaumerStatus.Stopped || _bs.Status == BaumerStatus.Uninitiated); }*/);
 
-			StopBaumerCommand = new RelayCommand( async ()=> 
-			{
-				CaptureBaumerEnabled = false;
-				StopBaumerEnabled = false;
-				await Task.Factory.StartNew(() => { _bs.StopBaumerCam(); });
-				StartBaumerEnabled = true;
-				CaptureBaumerEnabled = false;
-			}/*, ()=> { return !_bs.IsProcessing && (_bs.Status == BaumerStatus.Ready && _bs.Status != BaumerStatus.Capturing); }*/);
+			StopBaumerCommand = new RelayCommand(async () =>
+		   {
+			   CaptureBaumerEnabled = false;
+			   StopBaumerEnabled = false;
+			   await Task.Factory.StartNew(() => { _bs.StopBaumerCam(); });
+			   StartBaumerEnabled = true;
+			   CaptureBaumerEnabled = false;
+		   }/*, ()=> { return !_bs.IsProcessing && (_bs.Status == BaumerStatus.Ready && _bs.Status != BaumerStatus.Capturing); }*/);
 
-			CaptureBaumerCommand = new RelayCommand( async ()=> 
-			{
-				StopBaumerEnabled = false;
-				CaptureBaumerEnabled = false;
+			CaptureBaumerCommand = new RelayCommand(async () =>
+		   {
+			   StopBaumerEnabled = false;
+			   CaptureBaumerEnabled = false;
 				//Send to LED
 				Messenger.Default.Send<Gardasoft.Controller.API.Model.Register.ChannelMode>(Gardasoft.Controller.API.Model.Register.ChannelMode.Continuous);
 				//Send to SICK
 				Messenger.Default.Send<SickVM.Resp>(SickVM.Resp.Capturing);
-				await Task.Factory.StartNew(() =>
-				{
-						//for (int i = 0; i < 50; i++ )
-						{
-						_bs.CaptureInBatch();
-							//_bs.CaptureAndSaveSingleFrame();
-						}
-				});
-				Messenger.Default.Send<SickVM.Resp>(SickVM.Resp.CapturingFinished);
-				Messenger.Default.Send<Gardasoft.Controller.API.Model.Register.ChannelMode>(Gardasoft.Controller.API.Model.Register.ChannelMode.Switched);
-				StopBaumerEnabled = true;
-				CaptureBaumerEnabled = true;
-			}/*, ()=> { return !_bs.IsProcessing && (_bs.Status == BaumerStatus.Ready && _bs.Status != BaumerStatus.Capturing); }*/);
+			   await Task.Factory.StartNew(() =>
+			   {
+					//for (int i = 0; i < 50; i++ )
+					{
+					   _bs.CaptureInBatch();
+						//_bs.CaptureAndSaveSingleFrame();
+					}
+			   });
+			   Messenger.Default.Send<SickVM.Resp>(SickVM.Resp.CapturingFinished);
+			   Messenger.Default.Send<Gardasoft.Controller.API.Model.Register.ChannelMode>(Gardasoft.Controller.API.Model.Register.ChannelMode.Switched);
+			   StopBaumerEnabled = true;
+			   CaptureBaumerEnabled = true;
+		   }/*, ()=> { return !_bs.IsProcessing && (_bs.Status == BaumerStatus.Ready && _bs.Status != BaumerStatus.Capturing); }*/);
 
-			Messenger.Default.Register<SickVM.Cmds>(this, (cmd) => 
+			Messenger.Default.Register<SickVM.Cmds>(this, (cmd) =>
 			{
-				if(cmd == SickVM.Cmds.CarIncoming)
+				if (cmd == SickVM.Cmds.CarIncoming)
 				{
 					CaptureBaumerCommand.Execute(null);
 				}
@@ -105,7 +116,7 @@ namespace TSUImageCollectSystem.ViewModel
 				_StartBaumerEnabled = value; RaisePropertyChanged("StartBaumerEnabled");
 			}
 		}
-		public bool  StopBaumerEnabled
+		public bool StopBaumerEnabled
 		{
 			get { return _StopBaumerEnabled; }
 			set { _StopBaumerEnabled = value; RaisePropertyChanged("StopBaumerEnabled"); }
