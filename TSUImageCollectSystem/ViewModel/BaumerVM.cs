@@ -19,14 +19,15 @@ namespace TSUImageCollectSystem.ViewModel
 		{ get { return _bs.TotalImageShot; } }
 
 		public int TotalCarCount
-		{ get { return (int)(_bs.TotalImageShot / 10); } }
+		{ get { return (int)Math.Ceiling((double)TotalImageShot / 10); } }
 
 		public int TotalGroupCount
-		{ get { return (int)((_bs.TotalImageShot / 10) / 10); } }
+		{ get { return _bs.Parameters.GroupCount; } }
 
 		public int _ExposureInMs;
 		public int ExposureInMs
-		{ get
+		{
+			get
 			{ return _ExposureInMs; }
 			set { _ExposureInMs = _bs.SetExposure(value); RaisePropertyChanged("ExposureInMs"); }
 		}
@@ -48,6 +49,7 @@ namespace TSUImageCollectSystem.ViewModel
 				StartBaumerEnabled = false;
 				StartBaumerEnabled = !await Task.Factory.StartNew<bool>(() => { return _bs.StartBaumerCam(); });
 
+				Helpers.Log.LogThisInfo("Finished Enabling!");
 				if (!StartBaumerEnabled)
 					ExposureInMs = (int)_bs.Parameters.ExposureValue;
 				else
@@ -69,20 +71,22 @@ namespace TSUImageCollectSystem.ViewModel
 		   {
 			   StopBaumerEnabled = false;
 			   CaptureBaumerEnabled = false;
-				//Send to LED
-				Messenger.Default.Send<Gardasoft.Controller.API.Model.Register.ChannelMode>(Gardasoft.Controller.API.Model.Register.ChannelMode.Continuous);
-				//Send to SICK
-				Messenger.Default.Send<SickVM.Resp>(SickVM.Resp.Capturing);
+			   //Send to LED
+			   /*For now data sending */
+			   //Messenger.Default.Send<Gardasoft.Controller.API.Model.Register.ChannelMode>(Gardasoft.Controller.API.Model.Register.ChannelMode.Continuous);
+			   //Send to SICK
+			   Messenger.Default.Send<SickVM.Resp>(SickVM.Resp.Capturing);
 			   await Task.Factory.StartNew(() =>
 			   {
-					//for (int i = 0; i < 50; i++ )
-					{
-					   _bs.CaptureInBatch();
-						//_bs.CaptureAndSaveSingleFrame();
-					}
+				   //for (int i = 0; i < 50; i++ )
+				   {
+					   _bs.DoCapture();
+					   //_bs.CaptureInBatch();
+					   //_bs.CaptureAndSaveSingleFrame();
+				   }
 			   });
 			   Messenger.Default.Send<SickVM.Resp>(SickVM.Resp.CapturingFinished);
-			   Messenger.Default.Send<Gardasoft.Controller.API.Model.Register.ChannelMode>(Gardasoft.Controller.API.Model.Register.ChannelMode.Switched);
+			   //Messenger.Default.Send<Gardasoft.Controller.API.Model.Register.ChannelMode>(Gardasoft.Controller.API.Model.Register.ChannelMode.Switched);
 			   StopBaumerEnabled = true;
 			   CaptureBaumerEnabled = true;
 		   }/*, ()=> { return !_bs.IsProcessing && (_bs.Status == BaumerStatus.Ready && _bs.Status != BaumerStatus.Capturing); }*/);

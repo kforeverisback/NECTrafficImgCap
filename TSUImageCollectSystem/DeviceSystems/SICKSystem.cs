@@ -72,7 +72,8 @@ namespace TSUImageCollectSystem.DeviceSystems
 		{
 			if (SensorSystemAvailable)
 				return true;
-			IPAddress[] ipaddr = Dns.GetHostAddresses("169.254.3.172");
+			//IPAddress[] ipaddr = Dns.GetHostAddresses("169.254.3.172");
+			IPAddress[] ipaddr = Dns.GetHostAddresses("168.169.170.200");
 			if(ipaddr.Length > 0)
 			{
 				IPAddress ip = ipaddr[0];

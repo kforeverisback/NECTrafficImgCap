@@ -32,9 +32,9 @@ namespace TSUImageCollectSystem.DeviceSystems
 		public int CarsPerGroup { get; set; }
 		public string BasePath { get; private set; }
 
-		public int CarCount = 1;
-		public int CarImageCount = 1;
-		public int GroupCount = 1;
+		public int CarCount = 0;
+		public int CarImageCount = 0;
+		public int GroupCount = 0;
 
 		public BaumerSystemParameters() : this(10, 10, 0, 0)
 		{
@@ -87,7 +87,7 @@ namespace TSUImageCollectSystem.DeviceSystems
 		#endregion
 
 		String sExposureNodeName = "";
-		public static int InternalBufferCount = 4;
+		public static int InternalBufferCount = 10;
 		public int TotalImageShot { get; private set; }
 
 		public BaumerSystem()
@@ -436,11 +436,11 @@ namespace TSUImageCollectSystem.DeviceSystems
 			Helpers.Log.LogThisInfo("DEVICE PARAMETER SETUP\n");
 			Helpers.Log.LogThisInfo("######################\n\n");
 
+			IsProcessing = true;
 			try
 			{
-				IsProcessing = true;
 				//SET TRIGGER MODE OFF (FreeRun)
-				mDevice.RemoteNodeList["TriggerMode"].Value = "Off";
+				mDevice.RemoteNodeList["TriggerMode"].Value = "On";
 				Helpers.Log.LogThisInfo("         TriggerMode:             {0}\n", (string)mDevice.RemoteNodeList["TriggerMode"].Value);
 				Helpers.Log.LogThisInfo("  \n");
 			}
@@ -550,6 +550,10 @@ namespace TSUImageCollectSystem.DeviceSystems
 			Helpers.Log.LogThisInfo("CAMERA START\n");
 			Helpers.Log.LogThisInfo("############\n\n");
 
+			mDataStream.RegisterNewBufferEvent(BGAPI2.Events.EventMode.EVENT_HANDLER);
+			System.Console.Write("        Register Event Mode to:   {0}\n\n", mDataStream.EventMode.ToString());
+			mDataStream.NewBufferEvent += new BGAPI2.Events.DataStreamEventControl.NewBufferEventHandler(mDataStream_NewBufferEvent);
+
 			//START DATASTREAM ACQUISITION
 			try
 			{
@@ -575,6 +579,97 @@ namespace TSUImageCollectSystem.DeviceSystems
 				Helpers.Log.LogThisInfo("ErrorDescription: {0} \n", ex.GetErrorDescription());
 				Helpers.Log.LogThisInfo("in function:      {0} \n", ex.GetFunctionName());
 			}
+		}
+		
+		public void DoCapture()
+		{
+			if (Parameters.GroupCount <= 0) Parameters.GroupCount = 1;
+			if (Parameters.CarCount >= Parameters.CarsPerGroup)
+			{
+				Parameters.CarCount = 0;
+				Parameters.GroupCount++;
+			}
+			Parameters.CarImageCount = 1;
+			Parameters.CarCount++;
+
+			string grpCarPath = Path.Combine(Parameters.BasePath, string.Format("Group-{0}\\car-{1}", Parameters.GroupCount, Parameters.CarCount));
+			Directory.CreateDirectory(grpCarPath);
+			mDataStream.BufferList.FlushAllToInputQueue();
+		}
+		//EVENT HANDLER
+		void mDataStream_NewBufferEvent(object sender, BGAPI2.Events.NewBufferEventArgs mDSEvent)
+		{
+			if (Parameters.CarImageCount <= 0 || Parameters.CarImageCount > InternalBufferCount) return;
+
+			Helpers.Log.LogThisInfo(" [event of {0}] ", ((BGAPI2.DataStream)sender).Parent.Model); // device
+			Status = BaumerStatus.Capturing;
+			int i = 0;
+			IsProcessing = true;
+			if (Parameters.SleepBeforeCaptureBatch != 0)
+			{
+				System.Threading.Thread.Sleep(Parameters.SleepBeforeCaptureBatch);
+			}
+
+			//mDevice.RemoteNodeList["TriggerMode"].Value = "Off";
+			Helpers.Log.LogThisInfo("==>> Trigger Mode: " + mDevice.RemoteNodeList["TriggerMode"].Value);
+
+			try
+			{
+				BGAPI2.Buffer mBufferFilled = null;
+				mBufferFilled = mDSEvent.BufferObj;
+				if (mBufferFilled == null)
+				{
+					System.Diagnostics.Debug.WriteLine("Error: Buffer Timeout after 1000 msec");
+				}
+				else if (mBufferFilled.IsIncomplete == true)
+				{
+					Helpers.Log.LogThisError("Error: Image is incomplete, Trial: {0}", i);
+					// queue buffer again
+					mBufferFilled.QueueBuffer();
+				}
+				else
+				{
+					int w = (int)mBufferFilled.Width, h = (int)mBufferFilled.Height;
+
+					System.Drawing.Bitmap bb = Helpers.Utility.GetGrayBitmap(w, h, w * h, mBufferFilled.MemPtr);
+
+					string grpCarPath = Path.Combine(Parameters.BasePath, string.Format("Group-{0}\\car-{1}", Parameters.GroupCount, Parameters.CarCount));
+					string destFilePath = Path.Combine(grpCarPath, string.Format("car-image-{0}.bmp", Parameters.CarImageCount++));
+					Task.Factory.StartNew(() =>
+					{
+						bb.Save(destFilePath, System.Drawing.Imaging.ImageFormat.Bmp);
+					});
+
+
+					//event
+					TotalImageShot++;
+					if (ImageFileWritten != null)
+						ImageFileWritten(destFilePath);
+
+					mBufferFilled.QueueBuffer();
+				}
+
+				if (Parameters.SleepAfterEachCapture != 0)
+				{
+					//System.Threading.Thread.Sleep(Parameters.SleepAfterEachCapture);
+					//Task.Delay(Parameters.SleepAfterEachCapture);
+				}
+			}
+			catch (BGAPI2.Exceptions.LowLevelException exx)
+			{
+				Helpers.Log.LogThisError("-->ExceptionType:    {0} ", exx.GetType());
+				Helpers.Log.LogThisError("-->Msg:    {0} ", exx.Message);
+				Helpers.Log.LogThisError("-->ErrorDescription: {0} ", exx.GetErrorDescription());
+				Helpers.Log.LogThisError("-->in function:      {0} ", exx.GetFunctionName());
+			}
+			catch (BGAPI2.Exceptions.IException ex)
+			{
+				Helpers.Log.LogThisError("-->ExceptionType:    {0} ", ex.GetType());
+				Helpers.Log.LogThisError("-->Msg:    {0} ", ex.Message);
+				Helpers.Log.LogThisError("-->ErrorDescription: {0} ", ex.GetErrorDescription());
+				Helpers.Log.LogThisError("-->in function:      {0} ", ex.GetFunctionName());
+			}
+			return;
 		}
 
 		public bool StartBaumerCam()
@@ -694,6 +789,22 @@ namespace TSUImageCollectSystem.DeviceSystems
 			}
 			Helpers.Log.LogThisInfo("\n");
 
+			// RESET EVENT MODE TO DISABLED
+			//=============================
+			try
+			{
+				mDataStream.UnregisterNewBufferEvent();
+				mDataStream.RegisterNewBufferEvent(BGAPI2.Events.EventMode.DISABLED);
+				BGAPI2.Events.EventMode currentEventMode = mDataStream.EventMode;
+				System.Console.Write("        Unregister Event Mode:    {0}\n", mDataStream.EventMode.ToString());
+			}
+			catch (BGAPI2.Exceptions.IException ex)
+			{
+				System.Console.Write("ExceptionType:    {0} \n", ex.GetType());
+				System.Console.Write("ErrorDescription: {0} \n", ex.GetErrorDescription());
+				System.Console.Write("in function:      {0} \n", ex.GetFunctionName());
+			}
+			System.Console.Write("\n");
 
 			Helpers.Log.LogThisInfo("RELEASE\n");
 			Helpers.Log.LogThisInfo("#######\n\n");
@@ -853,6 +964,9 @@ namespace TSUImageCollectSystem.DeviceSystems
 			{
 				System.Threading.Thread.Sleep(Parameters.SleepBeforeCaptureBatch);
 			}
+
+			//mDevice.RemoteNodeList["TriggerMode"].Value = "Off";
+			Helpers.Log.LogThisInfo("==>> Trigger Mode: " + mDevice.RemoteNodeList["TriggerMode"].Value);
 
 			if (Parameters.CarCount > Parameters.CarsPerGroup) { Parameters.CarCount = 1; Parameters.GroupCount++; }
 			Parameters.CarImageCount = 1;
