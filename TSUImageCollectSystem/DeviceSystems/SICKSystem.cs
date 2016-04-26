@@ -68,34 +68,52 @@ namespace TSUImageCollectSystem.DeviceSystems
 		~SICKSystem()
 		{ Disconnect(); }
 
-		public bool Connect()
+		public Task<bool> Connect(string ipAddress)
 		{
-			if (SensorSystemAvailable)
-				return true;
-			//IPAddress[] ipaddr = Dns.GetHostAddresses("169.254.3.172");
-			IPAddress[] ipaddr = Dns.GetHostAddresses("168.169.170.200");
-			if(ipaddr.Length > 0)
+			return Task<bool>.Factory.StartNew(() => 
 			{
-				IPAddress ip = ipaddr[0];
-				_ipAndPort = new IPEndPoint(ip, 2111);
-				Task.Factory.StartNew(() => 
+				if (SensorSystemAvailable)
+					return true;
+				//IPAddress[] ipaddr = Dns.GetHostAddresses("169.254.3.172");
+				IPAddress[] ipaddr = Dns.GetHostAddresses(ipAddress);
+				//IPAddress[] ipaddr = Dns.GetHostAddresses("168.169.170.200");
+				if (ipaddr.Length > 0)
 				{
+					IPAddress ip = ipaddr[0];
+					_ipAndPort = new IPEndPoint(ip, 2111);
+					try
+					{
+						_sickSock.Connect(_ipAndPort);
+					}
+					catch (SocketException sex)
+					{
 
-					DoBackgroundWork(_cancelTokenS.Token, _ipAndPort);
-				}, _cancelTokenS.Token);
-				
-				return true;
-			}
-			else
-			{
-				return false;
-			}
+						return false;
+					}
+					catch (Exception ex)
+					{
+						return false;
+					}
+					Task.Factory.StartNew(() =>
+					{
+						DoBackgroundWork(_cancelTokenS.Token, _sickSock);
+					}, _cancelTokenS.Token);
+
+					return true;
+				}
+				else
+				{
+					return false;
+				}
+			});
 
 		}
 
 		public void Disconnect()
 		{
 			_cancelTokenS.Cancel();
+			//Thread.Sleep(100);
+			//_sickSock.Disconnect(true);
 			SensorSystemAvailable = false;
 		}
 		static string get_encoded_cmd(string str)
@@ -148,19 +166,19 @@ namespace TSUImageCollectSystem.DeviceSystems
 			return point >= MaxPointCount;
 		}
 
-		private void DoBackgroundWork(CancellationToken ct, IPEndPoint ip)
+		private void DoBackgroundWork(CancellationToken ct, Socket sickSock)
 		{
 			//while (!ct.IsCancellationRequested)
 			{
 				try
 				{
-					_sickSock.Connect(ip);
+					//sickSock.Connect(ip);
 					byte[] m_read_bytes = new byte[4096];
 					byte[] sentBytes = get_encoded_bytes("sRN DeviceIdent");
-					int sentBytesCount = _sickSock.Send(sentBytes);
+					int sentBytesCount = sickSock.Send(sentBytes);
 					if (sentBytesCount != sentBytes.Length)
 						return;
-					int readBytesCount = _sickSock.Receive(m_read_bytes);
+					int readBytesCount = sickSock.Receive(m_read_bytes);
 
 					if ((readBytesCount < 0 || m_read_bytes[1] != 's' || m_read_bytes[2] != 'R' || m_read_bytes[3] != 'A'))
 					{
@@ -170,9 +188,9 @@ namespace TSUImageCollectSystem.DeviceSystems
 					SensorSystemAvailable = true;
 
 					sentBytes = get_encoded_bytes("sRN LMDscandata");
-					sentBytesCount = _sickSock.Send(sentBytes);
+					sentBytesCount = sickSock.Send(sentBytes);
 
-					readBytesCount = _sickSock.Receive(m_read_bytes);
+					readBytesCount = sickSock.Receive(m_read_bytes);
 					int scanDataSize = readBytesCount;
 
 					if (m_read_bytes[1] == 's' && m_read_bytes[2] == 'R' && m_read_bytes[3] == 'A')
@@ -187,13 +205,13 @@ namespace TSUImageCollectSystem.DeviceSystems
 					}
 
 					sentBytes = get_encoded_bytes("sEN LMDscandata 1");
-					sentBytesCount = _sickSock.Send(sentBytes);
+					sentBytesCount = sickSock.Send(sentBytes);
 
-					readBytesCount = _sickSock.Receive(m_read_bytes, sentBytes.Length, SocketFlags.None);
+					readBytesCount = sickSock.Receive(m_read_bytes, sentBytes.Length, SocketFlags.None);
 					do
 					{
-						//readBytesCount = _sickSock.Receive(m_read_bytes);
-						readBytesCount = _sickSock.Receive(m_read_bytes, scanDataSize, SocketFlags.None);
+						//readBytesCount = sickSock.Receive(m_read_bytes);
+						readBytesCount = sickSock.Receive(m_read_bytes, scanDataSize, SocketFlags.None);
 						//if (!ec)
 						{
 							//string&& resp = get_response(m_read_bytes, readBytes);

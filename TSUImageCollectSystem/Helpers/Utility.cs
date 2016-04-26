@@ -9,8 +9,27 @@ namespace TSUImageCollectSystem.Helpers
 	using System.Drawing;
 	using System.Drawing.Imaging;
 	using System.Runtime.InteropServices;
+	using System.Text.RegularExpressions;
 	static class Utility
 	{
+		static public void ShowInfo(string txt)
+		{
+			System.Windows.MessageBox.Show(txt, "Successful", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+		}
+		static public void ShowError(string txt)
+		{
+			System.Windows.MessageBox.Show(txt, "!!Error!!", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+		}
+		static public void ShowWarning(string txt)
+		{
+			System.Windows.MessageBox.Show(txt, "!!WARNING!!", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+		}
+		public static bool IsTextAllowed(string text)
+		{
+			Regex regex = new Regex("[^0-9.-\\.]+"); //regex that matches disallowed text
+			return !regex.IsMatch(text);
+		}
+
 		public static Bitmap GetGrayBitmap(int width, int height, int stride, IntPtr ptr0)
 		{
 			Bitmap bmp = new Bitmap(width, height, PixelFormat.Format8bppIndexed);

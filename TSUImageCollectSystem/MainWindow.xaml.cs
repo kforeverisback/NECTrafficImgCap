@@ -31,5 +31,10 @@ namespace TSUImageCollectSystem
 			//ss.Connect();
 
 		}
+
+		private void TextBox_CheckForNumbersOnly(object sender, TextCompositionEventArgs e)
+		{
+			e.Handled = !Helpers.Utility.IsTextAllowed(e.Text);
+		}
 	}
 }

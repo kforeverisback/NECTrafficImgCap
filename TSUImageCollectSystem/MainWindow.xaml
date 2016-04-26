@@ -5,8 +5,8 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:TSUImageCollectSystem"
         mc:Ignorable="d"
-        Title="MainWindow" Height="390" Width="550" ResizeMode="NoResize" Background="#FFD6D6D6"
-        DataContext="{StaticResource mainVM}">
+        Title="MainWindow" Width="550" ResizeMode="NoResize" Background="#FFD6D6D6"
+        DataContext="{StaticResource mainVM}" SizeToContent="Height">
     <Window.Resources>
         <Style x:Key="txtBoxStyle" TargetType="TextBox">
             <Setter Property="Foreground" Value="Crimson"></Setter>
@@ -49,10 +49,10 @@
                         <Separator Margin="5"/>
                         <UniformGrid Columns="4" Rows="1">
                             <Label Content="Shot Count: "/>
-                            <TextBox Style="{StaticResource txtBoxStyle}" Margin="0,0,5,0" Text="{Binding BSParameters.BatchCaptureCount, Mode=OneWayToSource, FallbackValue=7,
-                            UpdateSourceTrigger=LostFocus}"/>
+                            <TextBox Style="{StaticResource txtBoxStyle}" Margin="0,0,5,0" Text="{Binding BSParameters.BatchCaptureCount, Mode=OneWayToSource, FallbackValue=10,
+                            UpdateSourceTrigger=LostFocus}" PreviewTextInput="TextBox_CheckForNumbersOnly"/>
                             <Label Content="Exposure(us): "/>
-                            <TextBox Style="{StaticResource txtBoxStyle}" Margin="0,0,5,0" Text="{Binding ExposureInMs, Mode=TwoWay, FallbackValue=4000, UpdateSourceTrigger=LostFocus}"/>
+                            <TextBox Style="{StaticResource txtBoxStyle}" Margin="0,0,5,0" Text="{Binding ExposureInMs, Mode=TwoWay, FallbackValue=4000, UpdateSourceTrigger=LostFocus}" PreviewTextInput="TextBox_CheckForNumbersOnly"/>
                         </UniformGrid>
                     </StackPanel>
                 </GroupBox>
@@ -61,19 +61,21 @@
         <Separator Margin="0,5,0,5"/>
         <GroupBox Header="Sick Sensor System" DataContext="{Binding SVM}">
             <StackPanel Margin="5">
-                <UniformGrid Columns="3" Height="30">
+                <UniformGrid Rows="2" Columns="3" Height="60">
                     <Button Margin="5,0,5,0" Content="Start Sick Sensor" IsEnabled="{Binding SICKStartBtnEnabled}" Command="{Binding StartSickSensor}" Grid.Column="0"/>
                     <Button Margin="5,0,5,0" Content="Stop Sensor" IsEnabled="{Binding SICKStopBtnEnabled}" Command="{Binding StopSickSensor}" Grid.Column="1"/>
                     <Button Margin="5,0,5,0" Content="Set Reference" IsEnabled="{Binding SICKReferenceBtnEnabled}" Command="{Binding SetReference}" Grid.Column="1"/>
+                    <Label Content="IP Address:  " HorizontalAlignment="Right"/>
+                    <TextBox Margin="2" Style="{StaticResource txtBoxStyle}" Text="{Binding IPAddress, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" PreviewTextInput="TextBox_CheckForNumbersOnly"/>
                 </UniformGrid>
                 <GroupBox Header="Options">
                     <UniformGrid Columns="4" Rows="2">
                         <Label Content="Total Data read: "/>
                         <TextBlock VerticalAlignment="Center" Text="{Binding RefDataAmount, FallbackValue=-1}"/>
                         <Label Content="Data Checking: "/>
-                        <TextBox Style="{StaticResource txtBoxStyle}" Text="{Binding DataCountUsed, Mode=TwoWay, FallbackValue=5, UpdateSourceTrigger=LostFocus}" Margin="0,0,5,0"/>
+                        <TextBox Style="{StaticResource txtBoxStyle}" Text="{Binding DataCountUsed, Mode=TwoWay, FallbackValue=5, UpdateSourceTrigger=LostFocus}" Margin="0,0,5,0" PreviewTextInput="TextBox_CheckForNumbersOnly"/>
                         <Label Content="Delay btn cars(ms): "/>
-                        <TextBox Style="{StaticResource txtBoxStyle}" Text="{Binding DelayBetweenCars, Mode=OneWayToSource, FallbackValue=2000, UpdateSourceTrigger=LostFocus}" Margin="0,0,5,0"/>
+                        <TextBox Style="{StaticResource txtBoxStyle}" Text="{Binding DelayBetweenCars, Mode=OneWayToSource, FallbackValue=2000, UpdateSourceTrigger=LostFocus}" Margin="0,0,5,0" PreviewTextInput="TextBox_CheckForNumbersOnly"/>
                     </UniformGrid>
                 </GroupBox>
             </StackPanel>

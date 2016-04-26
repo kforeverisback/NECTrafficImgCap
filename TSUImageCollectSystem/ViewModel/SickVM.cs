@@ -23,6 +23,13 @@ namespace TSUImageCollectSystem.ViewModel
 			CapturingFinished
 		}
 
+		string _IPAddress;
+		public string IPAddress
+		{
+			get { return _IPAddress; }
+			set { _IPAddress = value; RaisePropertyChanged("IPAddress"); }
+		}	
+
 		SICKSystem _ss;
 
 		public RelayCommand SetReference { get; set; }
@@ -108,15 +115,17 @@ namespace TSUImageCollectSystem.ViewModel
 			SICKReferenceBtnEnabled = SICKStopBtnEnabled = false;
 			SICKStartBtnEnabled = true;
 			DelayBetweenCars = 2000;
-			StartSickSensor = new RelayCommand(() =>
+			IPAddress = "168.169.170.200";
+			StartSickSensor = new RelayCommand(async () =>
 			{
 				SICKStartBtnEnabled = false;
-				if(_ss.Connect())
+				if(await _ss.Connect(IPAddress))
 				{
 					SICKReferenceBtnEnabled = SICKStopBtnEnabled = true;
 				}
 				else
 				{
+					Helpers.Utility.ShowError("No Sick Sensor is available at IP:" + IPAddress);
 					SICKStartBtnEnabled = true;
 				}
 			});
