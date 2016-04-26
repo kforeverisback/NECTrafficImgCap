@@ -33,16 +33,29 @@ namespace TSUImageCollectSystem.DeviceSystems
 		public int CarImageCount = 0;
 		public int GroupCount = 0;
 
-		public BaumerSystemParameters() : this(7)
+		public BaumerSystemParameters() : this(10)
 		{
+		}
+
+		public void SetBasePath()
+		{
+			int count = 0;
+			BasePath = Path.Combine(Path.Combine(Environment.CurrentDirectory, "output"), DateTime.Today.ToString("yyyy-MM-dd"));
+			string basePath = BasePath;
+			while (Directory.Exists(basePath))
+			{
+				basePath = string.Format("{1}-{0:D3}", count++, BasePath);
+			} //while (Directory.Exists(BasePath));
+
+			Directory.CreateDirectory(basePath);
+			BasePath = basePath;
+
 		}
 
 		public BaumerSystemParameters(
 			int _BatchCaptureCount)
 		{
-			BasePath = Path.Combine(Path.Combine(Environment.CurrentDirectory, "output"), DateTime.Today.ToString("yyyy-MM-dd"));
-
-			Directory.CreateDirectory(BasePath);
+			SetBasePath();
 
 			ImagesPerCar = 10;
 			CarsPerGroup = 10;
@@ -93,6 +106,12 @@ namespace TSUImageCollectSystem.DeviceSystems
 			Status = BaumerStatus.Uninitiated;
 			Parameters = new BaumerSystemParameters();
 			TotalImageShot = 0;
+		}
+
+		~BaumerSystem()
+		{
+			if(Status != BaumerStatus.Stopped || Status != BaumerStatus.Uninitiated)
+				StopBaumerCam();
 		}
 		public BaumerStatus Status { get; private set; }
 		public BaumerSystemParameters Parameters { get; private set; }
@@ -590,7 +609,7 @@ namespace TSUImageCollectSystem.DeviceSystems
 			Parameters.CarImageCount = 1;
 			Parameters.CarCount++;
 
-			string grpCarPath = Path.Combine(Parameters.BasePath, string.Format("Group-{0}\\car-{1}", Parameters.GroupCount, Parameters.CarCount));
+			string grpCarPath = Path.Combine(Parameters.BasePath, string.Format("Group-{0:D6}\\car-{1:D4}", Parameters.GroupCount, Parameters.CarCount));
 			Directory.CreateDirectory(grpCarPath);
 			mDataStream.BufferList.FlushAllToInputQueue();
 		}
@@ -627,8 +646,8 @@ namespace TSUImageCollectSystem.DeviceSystems
 
 					System.Drawing.Bitmap bb = Helpers.Utility.GetGrayBitmap(w, h, w * h, mBufferFilled.MemPtr);
 
-					string grpCarPath = Path.Combine(Parameters.BasePath, string.Format("Group-{0}\\car-{1}", Parameters.GroupCount, Parameters.CarCount));
-					string destFilePath = Path.Combine(grpCarPath, string.Format("car-image-{0}.bmp", Parameters.CarImageCount++));
+					string grpCarPath = Path.Combine(Parameters.BasePath, string.Format("Group-{0:D6}\\car-{1:D4}", Parameters.GroupCount, Parameters.CarCount));
+					string destFilePath = Path.Combine(grpCarPath, string.Format("car-image-{0:D4}.bmp", Parameters.CarImageCount++));
 					Task.Factory.StartNew(() =>
 					{
 						bb.Save(destFilePath, System.Drawing.Imaging.ImageFormat.Bmp);
@@ -665,6 +684,9 @@ namespace TSUImageCollectSystem.DeviceSystems
 		{
 			if (Status == BaumerStatus.Ready)
 				return true;
+
+			if (Status == BaumerStatus.Stopped)
+				Parameters.SetBasePath();
 
 			try
 			{
@@ -768,6 +790,30 @@ namespace TSUImageCollectSystem.DeviceSystems
 					mDataStream.StopAcquisition();
 					Helpers.Log.LogThisInfo("5.1.12   DataStream stopped \n");
 					bufferList.DiscardAllBuffers();
+
+					// RESET EVENT MODE TO DISABLED
+					//=============================
+					mDataStream.UnregisterNewBufferEvent();
+					mDataStream.RegisterNewBufferEvent(BGAPI2.Events.EventMode.DISABLED);
+					BGAPI2.Events.EventMode currentEventMode = mDataStream.EventMode;
+					System.Console.Write("        Unregister Event Mode:    {0}\n", mDataStream.EventMode.ToString());
+
+					Helpers.Log.LogThisInfo("RELEASE\n");
+					Helpers.Log.LogThisInfo("#######\n\n");
+					Helpers.Log.LogThisInfo("5.1.13   Releasing the resources\n");
+
+					while (bufferList.Count > 0)
+					{
+						mBuffer = (BGAPI2.Buffer)bufferList.Values.First();
+						bufferList.RevokeBuffer(mBuffer);
+					}
+					Helpers.Log.LogThisInfo("         buffers after revoke:    {0}\n", bufferList.Count);
+
+					mDataStream.Close();
+					mDevice.Close();
+					mInterface.Close();
+					mSystem.Close();
+
 				}
 				catch (BGAPI2.Exceptions.IException ex)
 				{
@@ -778,48 +824,6 @@ namespace TSUImageCollectSystem.DeviceSystems
 			}
 			Helpers.Log.LogThisInfo("\n");
 
-			// RESET EVENT MODE TO DISABLED
-			//=============================
-			try
-			{
-				mDataStream.UnregisterNewBufferEvent();
-				mDataStream.RegisterNewBufferEvent(BGAPI2.Events.EventMode.DISABLED);
-				BGAPI2.Events.EventMode currentEventMode = mDataStream.EventMode;
-				System.Console.Write("        Unregister Event Mode:    {0}\n", mDataStream.EventMode.ToString());
-			}
-			catch (BGAPI2.Exceptions.IException ex)
-			{
-				System.Console.Write("ExceptionType:    {0} \n", ex.GetType());
-				System.Console.Write("ErrorDescription: {0} \n", ex.GetErrorDescription());
-				System.Console.Write("in function:      {0} \n", ex.GetFunctionName());
-			}
-			System.Console.Write("\n");
-
-			Helpers.Log.LogThisInfo("RELEASE\n");
-			Helpers.Log.LogThisInfo("#######\n\n");
-
-			//Release buffers
-			Helpers.Log.LogThisInfo("5.1.13   Releasing the resources\n");
-			try
-			{
-				while (bufferList.Count > 0)
-				{
-					mBuffer = (BGAPI2.Buffer)bufferList.Values.First();
-					bufferList.RevokeBuffer(mBuffer);
-				}
-				Helpers.Log.LogThisInfo("         buffers after revoke:    {0}\n", bufferList.Count);
-
-				mDataStream.Close();
-				mDevice.Close();
-				mInterface.Close();
-				mSystem.Close();
-			}
-			catch (BGAPI2.Exceptions.IException ex)
-			{
-				Helpers.Log.LogThisInfo("ExceptionType:    {0} \n", ex.GetType());
-				Helpers.Log.LogThisInfo("ErrorDescription: {0} \n", ex.GetErrorDescription());
-				Helpers.Log.LogThisInfo("in function:      {0} \n", ex.GetFunctionName());
-			}
 
 			Helpers.Log.LogThisInfo("\nEnd\n\n");
 			Helpers.Log.LogThisInfo("Input any number to close the program:\n");
@@ -829,19 +833,26 @@ namespace TSUImageCollectSystem.DeviceSystems
 
 		public int SetExposure(double exposurevalue)
 		{
-			// check new value is within range
-			if (exposurevalue < Parameters.ExposureMin)
-				exposurevalue = Parameters.ExposureMin;
+			try
+			{
+				// check new value is within range
+				if (exposurevalue < Parameters.ExposureMin)
+					exposurevalue = Parameters.ExposureMin;
 
-			if (exposurevalue > Parameters.ExposureMax)
-				exposurevalue = Parameters.ExposureMax;
+				if (exposurevalue > Parameters.ExposureMax)
+					exposurevalue = Parameters.ExposureMax;
 
-			mDevice.RemoteNodeList[sExposureNodeName].Value = exposurevalue;
-			Parameters.ExposureValue = exposurevalue;
+				mDevice.RemoteNodeList[sExposureNodeName].Value = exposurevalue;
+				Parameters.ExposureValue = exposurevalue;
 
-			//recheck new exposure is set
-			System.Console.Write("          set value to:           {0}\n\n", (double)mDevice.RemoteNodeList[sExposureNodeName].Value);
-			return (int)Parameters.ExposureValue;
+				//recheck new exposure is set
+				System.Console.Write("          set value to:           {0}\n\n", (double)mDevice.RemoteNodeList[sExposureNodeName].Value);
+				return (int)Parameters.ExposureValue;
+			}
+			catch (Exception ex)
+			{
+				return 0;
+			}
 		}
 
 		//public bool CaptureInBatch(int captureTrial = 50)

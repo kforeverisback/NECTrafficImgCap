@@ -57,13 +57,27 @@ namespace TSUImageCollectSystem.ViewModel
 			StartBaumerCommand = new RelayCommand(async () =>
 			{
 				StartBaumerEnabled = false;
-				StartBaumerEnabled = !await Task.Factory.StartNew<bool>(() => { return _bs.StartBaumerCam(); });
+
+				StartBaumerEnabled = !await Task.Factory.StartNew<bool>(() => 
+				{
+				try
+				{
+					return _bs.StartBaumerCam();
+				}
+				catch (Exception ex)
+				{ 
+					return false;
+				}
+				});
 
 				Helpers.Log.LogThisInfo("Finished Enabling!");
-				if (!StartBaumerEnabled)
+				if (_bs.Status == BaumerStatus.Ready)
 					ExposureInMs = (int)_bs.Parameters.ExposureValue;
 				else
+				{
 					ExposureInMs = 0;
+					Helpers.Utility.ShowError("Baumer System not initialized");
+				}
 				StopBaumerEnabled = !StartBaumerEnabled;
 				CaptureBaumerEnabled = !StartBaumerEnabled;
 			}/*, ()=> { return !_bs.IsProcessing && (_bs.Status == BaumerStatus.Stopped || _bs.Status == BaumerStatus.Uninitiated); }*/);
