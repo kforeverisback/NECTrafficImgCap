@@ -136,6 +136,15 @@ namespace TSUImageCollectSystem.ViewModel
 					OutputPath = fbd.SelectedPath;
 				}
 			});
+
+
+			System.Timers.Timer t = new System.Timers.Timer(1000);
+			t.AutoReset = true;
+			t.Elapsed += (s, e) =>
+			{
+				System.Diagnostics.Debug.WriteLine("{0}", e.SignalTime.ToShortTimeString());
+			};
+			t.Enabled = true;
 		}
 
 		~BaumerVM()
