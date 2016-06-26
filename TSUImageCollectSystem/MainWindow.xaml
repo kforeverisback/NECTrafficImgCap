@@ -17,17 +17,17 @@
     </Window.Resources>
     <StackPanel Margin="5">
         <Grid DataContext="{Binding BVM}">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="247*"/>
-                <ColumnDefinition Width="45*"/>
-            </Grid.ColumnDefinitions>
             <TextBlock FontSize="25" Grid.Column="0" HorizontalAlignment="Center">
+                <!-- Removing Total Image Count
                 <Run Text="{Binding TotalImageShot, Mode=OneWay}" FontWeight="ExtraBold"/>
-                <Run Text=" Images, "/>
+                <Run Text=" Images, "/>-->
                 <Run Text="{Binding TotalCarCount, Mode=OneWay}" FontWeight="ExtraBold"/>
                 <Run Text=" Cars, "/>
+                <Run Text="Last Car: "/>
+                <Run Text="{Binding LastCarFolderName, Mode=OneWay}" FontWeight="Bold"/>
+                <!-- Removing Grouping System
                 <Run Text="{Binding TotalGroupCount, Mode=OneWay}" FontWeight="ExtraBold"/>
-                <Run Text=" Groups"/>
+                <Run Text=" Groups"/>-->
             </TextBlock>
             <TextBlock FontSize="25" Grid.Column="1" HorizontalAlignment="Center">
                 <Run Text="{Binding Time, Mode=OneWay}" FontWeight="ExtraBold"/>
@@ -35,7 +35,10 @@
             </TextBlock>
         </Grid>
         <Separator Margin="0,5,0,5"/>
-        <GroupBox Header="Baumer Cam System" DataContext="{Binding BVM}">
+        <GroupBox DataContext="{Binding BVM}">
+            <GroupBox.Header>
+                <TextBlock Text="Baumer Camera System" FontWeight="Medium"/>
+            </GroupBox.Header>
             <StackPanel Margin="5">
                 <UniformGrid Columns="3" Height="30">
                     <Button Margin="5,0,5,0" Content="Start Baumer Cam" IsEnabled="{Binding StartBaumerEnabled}" Command="{Binding StartBaumerCommand}" Grid.Column="0"/>
@@ -61,13 +64,18 @@
                             UpdateSourceTrigger=LostFocus}" PreviewTextInput="TextBox_CheckForNumbersOnly"/>
                             <Label Content="Exposure(us): "/>
                             <TextBox Style="{StaticResource txtBoxStyle}" Margin="0,0,5,0" Text="{Binding ExposureInMs, Mode=TwoWay, FallbackValue=4000, UpdateSourceTrigger=LostFocus}" PreviewTextInput="TextBox_CheckForNumbersOnly"/>
+                            <!--<Label Content="Trigger Delay(us): "/>
+                            <TextBox Style="{StaticResource txtBoxStyle}" Margin="0,0,5,0" Text="{Binding TriggerDelay, Mode=TwoWay, FallbackValue=4000, UpdateSourceTrigger=LostFocus}" PreviewTextInput="TextBox_CheckForNumbersOnly"/>-->
                         </UniformGrid>
                     </StackPanel>
                 </GroupBox>
             </StackPanel>
         </GroupBox>
         <Separator Margin="0,5,0,5"/>
-        <GroupBox Header="Sick Sensor System" DataContext="{Binding SVM}">
+        <GroupBox DataContext="{Binding SVM}">
+            <GroupBox.Header>
+                <TextBlock Text="Sick Sensor System" FontWeight="Medium"/>
+            </GroupBox.Header>
             <StackPanel Margin="5">
                 <UniformGrid Rows="2" Columns="3" Height="60">
                     <Button Margin="5,0,5,0" Content="Start Sick Sensor" IsEnabled="{Binding SICKStartBtnEnabled}" Command="{Binding StartSickSensor}" Grid.Column="0"/>

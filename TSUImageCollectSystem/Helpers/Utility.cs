@@ -30,6 +30,11 @@ namespace TSUImageCollectSystem.Helpers
 			return !regex.IsMatch(text);
 		}
 
+		public static string GetTimeStamp()
+		{
+			return DateTime.Now.ToString("yyyyMMdd_HHmmss_fff");
+		}
+
 		public static Bitmap GetGrayBitmap(int width, int height, int stride, IntPtr ptr0)
 		{
 			Bitmap bmp = new Bitmap(width, height, PixelFormat.Format8bppIndexed);

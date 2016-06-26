@@ -37,9 +37,9 @@
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="bgapi2_genicam_dotnet, Version=2.3.7670.7763, Culture=neutral, processorArchitecture=AMD64">
+    <Reference Include="bgapi2_genicam_dotnet, Version=2.3.7670.7763, Culture=neutral, processorArchitecture=x86">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\Components\Dev\C_Sharp\Win32\bgapi2_genicam_dotnet.dll</HintPath>
+      <HintPath>E:\baumertest64\bgapi2_genicam_dotnet.dll</HintPath>
     </Reference>
     <Reference Include="Gardasoft.Controller.API, Version=3.0.0.1032, Culture=neutral, PublicKeyToken=3c364760d6170a1b, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>

@@ -87,16 +87,17 @@ namespace TSUImageCollectSystem.DeviceSystems
 					}
 					catch (SocketException sex)
 					{
-
+						Helpers.Log.LogThisWarn("Socket Exception...", sex.Message);
 						return false;
 					}
 					catch (Exception ex)
 					{
+						Helpers.Log.LogThisWarn("Exception...", ex.Message);
 						return false;
 					}
 					Task.Factory.StartNew(() =>
 					{
-						DoBackgroundWork(_cancelTokenS.Token, _sickSock);
+						DoSensorDataProcessing(_cancelTokenS.Token, _sickSock);
 					}, _cancelTokenS.Token);
 
 					return true;
@@ -129,7 +130,6 @@ namespace TSUImageCollectSystem.DeviceSystems
 		static channel_data_16b get_only_1_scan_data(string data)
 		{
 			channel_data_16b chdata = new channel_data_16b();
-			string str;
 			string newData = data.Substring(84);
 			string []splitLines = newData.Split(" ".ToCharArray());
 			chdata.content = splitLines[0];
@@ -166,7 +166,7 @@ namespace TSUImageCollectSystem.DeviceSystems
 			return point >= MaxPointCount;
 		}
 
-		private void DoBackgroundWork(CancellationToken ct, Socket sickSock)
+		private void DoSensorDataProcessing(CancellationToken ct, Socket sickSock)
 		{
 			//while (!ct.IsCancellationRequested)
 			{
@@ -248,7 +248,7 @@ namespace TSUImageCollectSystem.DeviceSystems
 				}
 				catch (Exception ex)
 				{
-
+					Helpers.Log.LogThisWarn("Exception...", ex.Message);
 					//throw;
 				}
 			}

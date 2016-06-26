@@ -15,14 +15,12 @@ namespace TSUImageCollectSystem.ViewModel
 	{
 		BaumerSystem _bs;
 		//ImageGroupingManager _grpManager;
-		public int TotalImageShot
-		{ get { return _bs.TotalImageShot; } }
 
 		public int TotalCarCount
-		{ get { return (int)Math.Ceiling((double)TotalImageShot / _bs.Parameters.BatchCaptureCount); } }
+		{ get; private set; }
 
-		public int TotalGroupCount
-		{ get { return _bs.Parameters.GroupCount; } }
+		public string LastCarFolderName
+		{ get; private set; }
 
 		public int _ExposureInMs;
 		public int ExposureInMs
@@ -32,10 +30,19 @@ namespace TSUImageCollectSystem.ViewModel
 			set { _ExposureInMs = _bs.SetExposure(value); RaisePropertyChanged("ExposureInMs"); }
 		}
 
+		public int _TriggerDelay;
+		public int TriggerDelay
+		{
+			get
+			{ return _TriggerDelay; }
+			set { _TriggerDelay = _bs.SetTriggerDelay(value); RaisePropertyChanged("TriggerDelay"); }
+		}
+
 		public string OutputPath
 		{
 			get { return _bs.Parameters.BasePath; }
-			set {
+			set
+			{
 				_bs.Parameters.BasePath = value;
 				RaisePropertyChanged("OutputPath");
 			}
@@ -44,11 +51,12 @@ namespace TSUImageCollectSystem.ViewModel
 		public BaumerVM()
 		{
 			_bs = new BaumerSystem();
-			_bs.ImageFileWritten += (path) =>
+			_bs.CarFolderCreated += (folderName) =>
 			{
-				RaisePropertyChanged("TotalImageShot");
+				TotalCarCount++;
+				LastCarFolderName = folderName;
 				RaisePropertyChanged("TotalCarCount");
-				RaisePropertyChanged("TotalGroupCount");
+				RaisePropertyChanged("LastCarFolderName");
 				//_grpManager.QueueImageFile(path);
 			};
 			//_grpManager = new ImageGroupingManager(carsPerGroup: 10, imagesPerCar: _bs.Parameters.BatchCaptureCount);
@@ -58,24 +66,30 @@ namespace TSUImageCollectSystem.ViewModel
 			{
 				StartBaumerEnabled = false;
 
-				StartBaumerEnabled = !await Task.Factory.StartNew<bool>(() => 
+				StartBaumerEnabled = !await Task.Factory.StartNew<bool>(() =>
 				{
-				try
-				{
-					return _bs.StartBaumerCam();
-				}
-				catch (Exception ex)
-				{ 
-					return false;
-				}
+					try
+					{
+						return _bs.StartBaumerCam();
+					}
+					catch (Exception ex)
+					{
+						Helpers.Log.LogThisWarn("Exception...", ex);
+						return false;
+					}
 				});
 
 				Helpers.Log.LogThisInfo("Finished Enabling!");
 				if (_bs.Status == BaumerStatus.Ready)
+				{
+
 					ExposureInMs = (int)_bs.Parameters.ExposureValue;
+					TriggerDelay = (int)_bs.Parameters.TriggerDelay;
+				}
 				else
 				{
-					ExposureInMs = 0;
+					ExposureInMs = -1;
+					TriggerDelay = -1;
 					Helpers.Utility.ShowError("Baumer System not initialized");
 				}
 				StopBaumerEnabled = !StartBaumerEnabled;
@@ -125,13 +139,13 @@ namespace TSUImageCollectSystem.ViewModel
 				}
 			});
 
-			BrowseCommand = new RelayCommand(()=> 
+			BrowseCommand = new RelayCommand(() =>
 			{
 				System.Windows.Forms.FolderBrowserDialog fbd = new System.Windows.Forms.FolderBrowserDialog();
 				fbd.ShowNewFolderButton = true;
 				fbd.SelectedPath = _bs.Parameters.BasePath;
 				fbd.Description = "Select Output Folder";
-				if(fbd.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+				if (fbd.ShowDialog() == System.Windows.Forms.DialogResult.OK)
 				{
 					OutputPath = fbd.SelectedPath;
 				}

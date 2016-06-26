@@ -25,13 +25,13 @@ namespace TSUImageCollectSystem.DeviceSystems
 		public double ExposureMax { get; set; }
 		public double ExposureValue { get; set; }
 		public double ExposureMin { get; set; }
+		public double TriggerDelay { get; set; }
 		public readonly int ImagesPerCar;
 		public readonly int CarsPerGroup;
 		public string BasePath { get; set; }
 
 		public int CarCount = 0;
 		public int CarImageCount = 0;
-		public int GroupCount = 0;
 
 		public BaumerSystemParameters() : this(10)
 		{
@@ -98,14 +98,12 @@ namespace TSUImageCollectSystem.DeviceSystems
 		#endregion
 
 		String sExposureNodeName = "";
-		public static int InternalBufferCount = 10;
-		public int TotalImageShot { get; private set; }
+		public static int InternalBufferCount = 25;
 
 		public BaumerSystem()
 		{
 			Status = BaumerStatus.Uninitiated;
 			Parameters = new BaumerSystemParameters();
-			TotalImageShot = 0;
 		}
 
 		~BaumerSystem()
@@ -116,8 +114,8 @@ namespace TSUImageCollectSystem.DeviceSystems
 		public BaumerStatus Status { get; private set; }
 		public BaumerSystemParameters Parameters { get; private set; }
 		public bool IsProcessing { get; private set; }
-		public delegate void ImageFileWrittenDelegate(string path);
-		public event ImageFileWrittenDelegate ImageFileWritten;
+		public delegate void CarFolderCreatedDelegate(string path);
+		public event CarFolderCreatedDelegate CarFolderCreated;
 		bool LoadImageProcessor()
 		{
 			//LOAD IMAGE PROCESSOR
@@ -460,6 +458,19 @@ namespace TSUImageCollectSystem.DeviceSystems
 				mDevice.RemoteNodeList["TriggerMode"].Value = "On";
 				Helpers.Log.LogThisInfo("         TriggerMode:             {0}\n", (string)mDevice.RemoteNodeList["TriggerMode"].Value);
 				Helpers.Log.LogThisInfo("  \n");
+
+
+				////TEST
+				//mDevice.RemoteNodeList["TriggerMode"].Value = "On";
+				//mDevice.RemoteNodeList["LineSelector"].Value = "Line1";
+				//mDevice.RemoteNodeList["TriggerSource"].Value = "Line0";
+				//mDevice.RemoteNodeList["LineSelector"].Value = "Line1";
+				//mDevice.RemoteNodeList["LineSource"].Value = "Line0";
+				//mDevice.RemoteNodeList["LineInverter"].Value = false;
+
+				Helpers.Log.LogThisInfo("         ==>Line Selector:             {0}\n         ==>Trigger Source:             {1}\n         ==>Line Source:             {2}\n         ==>Line Inverter:             {3}\n", mDevice.RemoteNodeList["LineSelector"].Value, mDevice.RemoteNodeList["TriggerSource"].Value, mDevice.RemoteNodeList["LineSource"].Value, mDevice.RemoteNodeList["Line Inverter"].Value);
+
+				Parameters.TriggerDelay = (double)mDevice.RemoteNodeList["TriggerDelay"].Value;
 			}
 			catch (BGAPI2.Exceptions.IException ex)
 			{
@@ -600,17 +611,15 @@ namespace TSUImageCollectSystem.DeviceSystems
 		
 		public void DoCapture()
 		{
-			if (Parameters.GroupCount <= 0) Parameters.GroupCount = 1;
-			if (Parameters.CarCount >= Parameters.CarsPerGroup)
-			{
-				Parameters.CarCount = 0;
-				Parameters.GroupCount++;
-			}
 			Parameters.CarImageCount = 1;
 			Parameters.CarCount++;
 
-			string grpCarPath = Path.Combine(Parameters.BasePath, string.Format("Group-{0:D6}\\car-{1:D4}", Parameters.GroupCount, Parameters.CarCount));
-			Directory.CreateDirectory(grpCarPath);
+			string carFolderName = Helpers.Utility.GetTimeStamp();
+			string carPath = Path.Combine(Parameters.BasePath, string.Format("{0}", carFolderName));
+			Directory.CreateDirectory(carPath);
+			if (CarFolderCreated != null)
+				CarFolderCreated(carFolderName);
+			Helpers.Log.LogThisInfo("-->Car created {0}, buffers flushed", carFolderName);
 			mDataStream.BufferList.FlushAllToInputQueue();
 		}
 		//EVENT HANDLER
@@ -646,18 +655,18 @@ namespace TSUImageCollectSystem.DeviceSystems
 
 					System.Drawing.Bitmap bb = Helpers.Utility.GetGrayBitmap(w, h, w * h, mBufferFilled.MemPtr);
 
-					string grpCarPath = Path.Combine(Parameters.BasePath, string.Format("Group-{0:D6}\\car-{1:D4}", Parameters.GroupCount, Parameters.CarCount));
-					string destFilePath = Path.Combine(grpCarPath, string.Format("car-image-{0:D4}.bmp", Parameters.CarImageCount++));
+					string carPath = Path.Combine(Parameters.BasePath, string.Format("{0}", Helpers.Utility.GetTimeStamp()));
+					string destFilePath = Path.Combine(carPath, string.Format("{0}{1:D3}.bmp", Helpers.Utility.GetTimeStamp(), Parameters.CarImageCount++));
 					Task.Factory.StartNew(() =>
 					{
 						bb.Save(destFilePath, System.Drawing.Imaging.ImageFormat.Bmp);
 					});
 
 
-					//event
-					TotalImageShot++;
-					if (ImageFileWritten != null)
-						ImageFileWritten(destFilePath);
+					//event TotalImageShot is removed
+					//TotalImageShot++;
+					//if (ImageFileWritten != null)
+					//	ImageFileWritten(destFilePath);
 
 					mBufferFilled.QueueBuffer();
 				}
@@ -794,7 +803,7 @@ namespace TSUImageCollectSystem.DeviceSystems
 					// RESET EVENT MODE TO DISABLED
 					//=============================
 					mDataStream.UnregisterNewBufferEvent();
-					mDataStream.RegisterNewBufferEvent(BGAPI2.Events.EventMode.DISABLED);
+					mDataStream.RegisterNewBufferEvent(BGAPI2.Events.EventMode.UNREGISTERED);
 					BGAPI2.Events.EventMode currentEventMode = mDataStream.EventMode;
 					System.Console.Write("        Unregister Event Mode:    {0}\n", mDataStream.EventMode.ToString());
 
@@ -849,7 +858,23 @@ namespace TSUImageCollectSystem.DeviceSystems
 				System.Console.Write("          set value to:           {0}\n\n", (double)mDevice.RemoteNodeList[sExposureNodeName].Value);
 				return (int)Parameters.ExposureValue;
 			}
-			catch (Exception ex)
+			catch (Exception)
+			{
+				return 0;
+			}
+		}
+
+		//There is a text box which is disabled now for trigger delay set
+		public int SetTriggerDelay(double delay)
+		{
+			try
+			{
+				Parameters.TriggerDelay = delay;
+				mDevice.RemoteNodeList["TriggerDelay"].Value = Parameters.TriggerDelay;
+				
+				return (int)Parameters.TriggerDelay;
+			}
+			catch (Exception)
 			{
 				return 0;
 			}

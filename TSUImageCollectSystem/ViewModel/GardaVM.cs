@@ -76,8 +76,6 @@ namespace TSUImageCollectSystem.ViewModel
 		bool _searchBtnEnalbed;
 		bool _CloseBtnEnalbed;
 		bool _BrightneseEnabled;
-		bool _PulseDelayEnabled;
-		bool _PulseWidthEnabled;
 		public bool SearchBtnEnalbed
 		{
 			get { return _searchBtnEnalbed; }
@@ -158,7 +156,7 @@ namespace TSUImageCollectSystem.ViewModel
 			});
 		}
 
-		Register.ChannelMode chm = Register.ChannelMode.Switched;
+		//Register.ChannelMode chm = Register.ChannelMode.Switched;
 		public GardaVM()
 		{
 			_gs = new GardaSystem();

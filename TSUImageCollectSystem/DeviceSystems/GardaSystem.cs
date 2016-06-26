@@ -188,7 +188,7 @@ namespace TSUImageCollectSystem.DeviceSystems
 		public event EventHandler ChannelsAvailable;
 		public event EventHandler<ControllerStatusChangedEventArgs> ConnectionStatusChanged;
 		public delegate void BrightnessValueRangeChangedDelegate(int max, int min);
-		public event BrightnessValueRangeChangedDelegate BrightnessValueRangeChanged;
+		//public event BrightnessValueRangeChangedDelegate BrightnessValueRangeChanged;
 		#endregion;
 
 	}
