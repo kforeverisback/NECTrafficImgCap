@@ -12,13 +12,13 @@ namespace TSUImageCollectSystem.ViewModel
 
 		public SickVM SVM { get; private set; }
 
-		public GardaVM GVM { get; private set; }
+		///public GardaVM GVM { get; private set; }
 
 		public MainVM()
 		{
 			BVM = new BaumerVM();
 			SVM = new SickVM();
-			GVM = new GardaVM();
+			///GVM = new GardaVM();
 		}
 	}
 }

@@ -25,51 +25,50 @@ namespace TSUImageCollectSystem.DeviceSystems
 		public double ExposureMax { get; set; }
 		public double ExposureValue { get; set; }
 		public double ExposureMin { get; set; }
+		public bool TriggerMode { get; set; }
 		public double TriggerDelay { get; set; }
-		public readonly int ImagesPerCar;
-		public readonly int CarsPerGroup;
 		public string BasePath { get; set; }
 
 		public int CarCount = 0;
 		public int CarImageCount = 0;
 
-		public BaumerSystemParameters() : this(10)
+		//Images Per Car = Helpers.Args.DefaultArgs.ShotPerCar
+		public BaumerSystemParameters() : this(Helpers.Args.DefaultArgs.ShotPerCar)
 		{
+		}
+
+		public BaumerSystemParameters(
+			int batchCaptureCount)
+		{
+			SetBasePath();
+
+			if (batchCaptureCount > BaumerSystem.InternalBufferCount)
+				BatchCaptureCount = BaumerSystem.InternalBufferCount;
+			else
+				BatchCaptureCount = batchCaptureCount;
+
+			ExposureValue = Helpers.Args.DefaultArgs.Exposure;
+			TriggerDelay = Helpers.Args.DefaultArgs.TriggerDelay;
+			TriggerMode = Helpers.Args.DefaultArgs.TriggerMode;
 		}
 
 		public void SetBasePath()
 		{
-			int count = 0;
-			BasePath = Path.Combine(Path.Combine(Environment.CurrentDirectory, "output"), DateTime.Today.ToString("yyyy-MM-dd"));
-			string basePath = BasePath;
-			while (Directory.Exists(basePath))
-			{
-				basePath = string.Format("{1}-{0:D3}", count++, BasePath);
-			} //while (Directory.Exists(BasePath));
+			string outPath = string.IsNullOrEmpty(Helpers.Args.DefaultArgs.OutputPath) ? Environment.CurrentDirectory : Helpers.Args.DefaultArgs.OutputPath;
+			BasePath = Path.Combine(Path.Combine(outPath, "output"), DateTime.Today.ToString("yyyy-MM-dd"));
+			Directory.CreateDirectory(BasePath);
+			//string basePath = BasePath;
+			//int count = 0;
+			//while (Directory.Exists(basePath))
+			//{
+			//	basePath = string.Format("{1}-{0:D2}", count++, BasePath);
+			//} //while (Directory.Exists(BasePath));
 
-			Directory.CreateDirectory(basePath);
-			BasePath = basePath;
-
-		}
-
-		public BaumerSystemParameters(
-			int _BatchCaptureCount)
-		{
-			SetBasePath();
-
-			ImagesPerCar = 10;
-			CarsPerGroup = 10;
-
-			if (_BatchCaptureCount > BaumerSystem.InternalBufferCount)
-				BatchCaptureCount = BaumerSystem.InternalBufferCount;
-			else
-				BatchCaptureCount = _BatchCaptureCount;
-
-			//SleepAfterEachCapture = _SleepAfterEachCapture;
-			//SleepBeforeEachCapture = _SleepBeforeCaptureBatch;
-			//SleepBeforeCaptureBatch = _SleepBeforeCaptureBatch;
+			//Directory.CreateDirectory(basePath);
+			//BasePath = basePath;
 
 		}
+
 	}
 	class BaumerSystem
 	{
@@ -108,8 +107,7 @@ namespace TSUImageCollectSystem.DeviceSystems
 
 		~BaumerSystem()
 		{
-			if(Status != BaumerStatus.Stopped || Status != BaumerStatus.Uninitiated)
-				StopBaumerCam();
+			StopBaumerCam();
 		}
 		public BaumerStatus Status { get; private set; }
 		public BaumerSystemParameters Parameters { get; private set; }
@@ -429,20 +427,6 @@ namespace TSUImageCollectSystem.DeviceSystems
 				mDevice = deviceList[sDeviceID];
 			}
 
-			if (mDevice.GetRemoteNodeList().GetNodePresent("ExposureTime"))
-			{
-				sExposureNodeName = "ExposureTime";
-			}
-			else if (mDevice.GetRemoteNodeList().GetNodePresent("ExposureTimeAbs"))
-			{
-				sExposureNodeName = "ExposureTimeAbs";
-			}
-
-			//get current value and limits
-			Parameters.ExposureValue = (double)mDevice.RemoteNodeList[sExposureNodeName].Value;
-			Parameters.ExposureMin = (double)mDevice.RemoteNodeList[sExposureNodeName].Min;
-			Parameters.ExposureMax = (double)mDevice.RemoteNodeList[sExposureNodeName].Max;
-
 			IsProcessing = false;
 		}
 
@@ -455,22 +439,48 @@ namespace TSUImageCollectSystem.DeviceSystems
 			try
 			{
 				//SET TRIGGER MODE OFF (FreeRun)
-				mDevice.RemoteNodeList["TriggerMode"].Value = "On";
 				Helpers.Log.LogThisInfo("         TriggerMode:             {0}\n", (string)mDevice.RemoteNodeList["TriggerMode"].Value);
-				Helpers.Log.LogThisInfo("  \n");
 
+				if(Parameters.TriggerMode)
+				{
+					mDevice.RemoteNodeList["TriggerMode"].Value = "On";
+					mDevice.RemoteNodeList["LineSelector"].Value = "Line1";
+					mDevice.RemoteNodeList["TriggerSource"].Value = "All";//Or Line0
+					mDevice.RemoteNodeList["LineSelector"].Value = "Line1";
+					mDevice.RemoteNodeList["LineSource"].Value = "Line0";
+					mDevice.RemoteNodeList["LineInverter"].Value = false;
+					mDevice.RemoteNodeList["UserOutputValue"].Value = true;
+					mDevice.RemoteNodeList["TriggerDelay"].Value = (double)Parameters.TriggerDelay;
+				}
+				else
+				{
+					mDevice.RemoteNodeList["TriggerMode"].Value = "Off";
+					mDevice.RemoteNodeList["LineInverter"].Value = false;
+				}
+				if (mDevice.GetRemoteNodeList().GetNodePresent("ExposureTime"))
+				{
+					sExposureNodeName = "ExposureTime";
+				}
+				else if (mDevice.GetRemoteNodeList().GetNodePresent("ExposureTimeAbs"))
+				{
+					sExposureNodeName = "ExposureTimeAbs";
+				}
 
-				////TEST
-				//mDevice.RemoteNodeList["TriggerMode"].Value = "On";
-				//mDevice.RemoteNodeList["LineSelector"].Value = "Line1";
-				//mDevice.RemoteNodeList["TriggerSource"].Value = "Line0";
-				//mDevice.RemoteNodeList["LineSelector"].Value = "Line1";
-				//mDevice.RemoteNodeList["LineSource"].Value = "Line0";
-				//mDevice.RemoteNodeList["LineInverter"].Value = false;
+				//get current value and limits
+				//Parameters.ExposureValue = (double)mDevice.RemoteNodeList[sExposureNodeName].Value;
+				Parameters.ExposureMin = (double)mDevice.RemoteNodeList[sExposureNodeName].Min;
+				Parameters.ExposureMax = (double)mDevice.RemoteNodeList[sExposureNodeName].Max;
+
+				if (Parameters.ExposureValue < Parameters.ExposureMin)
+					Parameters.ExposureValue = Parameters.ExposureMin;
+
+				if (Parameters.ExposureValue > Parameters.ExposureMax)
+					Parameters.ExposureValue = Parameters.ExposureMax;
+
+				mDevice.RemoteNodeList[sExposureNodeName].Value = Parameters.ExposureValue;
 
 				Helpers.Log.LogThisInfo("         ==>Line Selector:             {0}\n         ==>Trigger Source:             {1}\n         ==>Line Source:             {2}\n         ==>Line Inverter:             {3}\n", mDevice.RemoteNodeList["LineSelector"].Value, mDevice.RemoteNodeList["TriggerSource"].Value, mDevice.RemoteNodeList["LineSource"].Value, mDevice.RemoteNodeList["Line Inverter"].Value);
 
-				Parameters.TriggerDelay = (double)mDevice.RemoteNodeList["TriggerDelay"].Value;
 			}
 			catch (BGAPI2.Exceptions.IException ex)
 			{
@@ -514,6 +524,18 @@ namespace TSUImageCollectSystem.DeviceSystems
 				{
 					Helpers.Log.LogThisInfo("5.1.9   Open first datastream \n");
 					Helpers.Log.LogThisInfo("          DataStream ID:          {0}\n\n", dst_pair.Key);
+					//if (dst_pair.Value.IsOpen || dst_pair.Value.IsGrabbing )
+					//{
+						if (mDevice.RemoteNodeList.GetNodePresent("AcquisitionAbort") == true)
+						{
+							mDevice.RemoteNodeList["AcquisitionAbort"].Execute();
+							Helpers.Log.LogThisInfo("5.1.12   {0} aborted\n", mDevice.Model);
+						}
+
+						mDevice.RemoteNodeList["AcquisitionStop"].Execute();
+						//dst_pair.Value.Close();
+					System.Threading.Thread.Sleep(50);
+					//}
 					dst_pair.Value.Open();
 					sDataStreamID = dst_pair.Key;
 					Helpers.Log.LogThisInfo("        Opened datastream - NodeList Information \n");
@@ -607,8 +629,11 @@ namespace TSUImageCollectSystem.DeviceSystems
 				Helpers.Log.LogThisInfo("ErrorDescription: {0} \n", ex.GetErrorDescription());
 				Helpers.Log.LogThisInfo("in function:      {0} \n", ex.GetFunctionName());
 			}
+
+			Status = BaumerStatus.Ready;
 		}
-		
+
+		string current_car_path = "";
 		public void DoCapture()
 		{
 			Parameters.CarImageCount = 1;
@@ -617,6 +642,7 @@ namespace TSUImageCollectSystem.DeviceSystems
 			string carFolderName = Helpers.Utility.GetTimeStamp();
 			string carPath = Path.Combine(Parameters.BasePath, string.Format("{0}", carFolderName));
 			Directory.CreateDirectory(carPath);
+			current_car_path = carPath;
 			if (CarFolderCreated != null)
 				CarFolderCreated(carFolderName);
 			Helpers.Log.LogThisInfo("-->Car created {0}, buffers flushed", carFolderName);
@@ -653,10 +679,10 @@ namespace TSUImageCollectSystem.DeviceSystems
 				{
 					int w = (int)mBufferFilled.Width, h = (int)mBufferFilled.Height;
 
-					System.Drawing.Bitmap bb = Helpers.Utility.GetGrayBitmap(w, h, w * h, mBufferFilled.MemPtr);
+					System.Drawing.Bitmap bb = Helpers.Utility.GetGrayBitmap(w, h, mBufferFilled.MemPtr);
 
-					string carPath = Path.Combine(Parameters.BasePath, string.Format("{0}", Helpers.Utility.GetTimeStamp()));
-					string destFilePath = Path.Combine(carPath, string.Format("{0}{1:D3}.bmp", Helpers.Utility.GetTimeStamp(), Parameters.CarImageCount++));
+					//string carPath = Path.Combine(Parameters.BasePath, string.Format("{0}", Helpers.Utility.GetTimeStamp()));
+					string destFilePath = Path.Combine(current_car_path, string.Format("{0}_{1:D3}.bmp", Helpers.Utility.GetTimeStamp(), Parameters.CarImageCount++));
 					Task.Factory.StartNew(() =>
 					{
 						bb.Save(destFilePath, System.Drawing.Imaging.ImageFormat.Bmp);
@@ -717,13 +743,15 @@ namespace TSUImageCollectSystem.DeviceSystems
 				return false;
 			}
 
-			Status = BaumerStatus.Ready;
-			IsProcessing = false;
-			return true;
+			return Status == BaumerStatus.Ready;
+			
 		}
 
 		public void StopBaumerCam()
 		{
+			if (Status != BaumerStatus.Ready && Status != BaumerStatus.Capturing)
+				return;
+		
 			//STOP CAMERA
 			if (mDevice != null)
 			{
@@ -842,6 +870,10 @@ namespace TSUImageCollectSystem.DeviceSystems
 
 		public int SetExposure(double exposurevalue)
 		{
+			if (Status != BaumerStatus.Ready)
+			{
+				return (int)Parameters.ExposureValue;
+			}
 			try
 			{
 				// check new value is within range
@@ -871,7 +903,7 @@ namespace TSUImageCollectSystem.DeviceSystems
 			{
 				Parameters.TriggerDelay = delay;
 				mDevice.RemoteNodeList["TriggerDelay"].Value = Parameters.TriggerDelay;
-				
+
 				return (int)Parameters.TriggerDelay;
 			}
 			catch (Exception)

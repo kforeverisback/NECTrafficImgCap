@@ -19,7 +19,7 @@ namespace TSUImageCollectSystem.DeviceSystems
 		public UInt32 start_angle;
 		public UInt32 steps;
 		public UInt32 amnt_data;
-		public UInt32 [] data = new uint[256]; //MAX 512 DATA
+		public UInt32[] data = new uint[256]; //MAX 512 DATA
 		public channel_data_16b Copy()
 		{
 			channel_data_16b cd = (channel_data_16b)MemberwiseClone();
@@ -33,7 +33,7 @@ namespace TSUImageCollectSystem.DeviceSystems
 	{
 		Socket _sickSock;
 		IPEndPoint _ipAndPort;
-		CancellationTokenSource _cancelTokenS = new CancellationTokenSource();
+		CancellationTokenSource _cancelTokenS;
 
 		/// <summary>
 		/// 
@@ -49,20 +49,23 @@ namespace TSUImageCollectSystem.DeviceSystems
 		public int MaxPointCount { get; set; }
 		public int Threshold { get; set; }
 
+		public int Port { get; set; }
+
 		public delegate void SICKCarIncomingNotiHandler();
 		public event SICKCarIncomingNotiHandler SICKCarIncoming;
 
 		public delegate void SICKDataNotificationHandler(channel_data_16b data);
 		public event SICKDataNotificationHandler SICKDataNotification;
-		
-		public event SICKDataNotificationHandler SICKReferenceSet;
+
+		//public event SICKDataNotificationHandler SICKReferenceSet;
 
 		public SICKSystem()
 		{
 			Threshold = 0x20;
+			Port = Helpers.Args.DefaultArgs.Port;
+			MaxPointCount = Helpers.Args.DefaultArgs.DataCheckCount;
 			SetReference = false;
-			WillNotify = true; 
-			_sickSock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+			WillNotify = true;
 		}
 
 		~SICKSystem()
@@ -70,56 +73,72 @@ namespace TSUImageCollectSystem.DeviceSystems
 
 		public Task<bool> Connect(string ipAddress)
 		{
-			return Task<bool>.Factory.StartNew(() => 
+			return Task<bool>.Factory.StartNew(() =>
 			{
-				if (SensorSystemAvailable)
-					return true;
-				//IPAddress[] ipaddr = Dns.GetHostAddresses("169.254.3.172");
-				IPAddress[] ipaddr = Dns.GetHostAddresses(ipAddress);
-				//IPAddress[] ipaddr = Dns.GetHostAddresses("168.169.170.200");
-				if (ipaddr.Length > 0)
+				if (_sickSock == null)
 				{
-					IPAddress ip = ipaddr[0];
-					_ipAndPort = new IPEndPoint(ip, 2111);
-					try
-					{
-						_sickSock.Connect(_ipAndPort);
-					}
-					catch (SocketException sex)
-					{
-						Helpers.Log.LogThisWarn("Socket Exception...", sex.Message);
-						return false;
-					}
-					catch (Exception ex)
-					{
-						Helpers.Log.LogThisWarn("Exception...", ex.Message);
-						return false;
-					}
-					Task.Factory.StartNew(() =>
-					{
-						DoSensorDataProcessing(_cancelTokenS.Token, _sickSock);
-					}, _cancelTokenS.Token);
+					_sickSock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+				}
+				else if (!_sickSock.Connected)
+				{
+					_sickSock.Dispose();
+					_sickSock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+				}
 
-					return true;
-				}
-				else
+				lock (_sickSock)
 				{
-					return false;
+					if (SensorSystemAvailable)
+						return true;
+					_cancelTokenS = new CancellationTokenSource();
+					//IPAddress[] ipaddr = Dns.GetHostAddresses("169.254.3.172");
+					IPAddress[] ipaddr = Dns.GetHostAddresses(ipAddress);
+					//IPAddress[] ipaddr = Dns.GetHostAddresses("168.169.170.200");
+					if (ipaddr.Length > 0)
+					{
+						IPAddress ip = ipaddr[0];
+						_ipAndPort = new IPEndPoint(ip, Port);
+						try
+						{
+							_sickSock.Connect(_ipAndPort);
+						}
+						catch (SocketException sex)
+						{
+							Helpers.Log.LogThisWarn("Socket Exception: {0}", sex.Message);
+							return false;
+						}
+						catch (Exception ex)
+						{
+							Helpers.Log.LogThisWarn("Exception: {0}", ex.Message);
+							return false;
+						}
+						Task.Factory.StartNew(() =>
+						{
+							DoSensorDataProcessing(_cancelTokenS.Token, _sickSock);
+						}, _cancelTokenS.Token);
+
+						return true;
+					}
+					else
+					{
+						return false;
+					}
 				}
+				
 			});
 
 		}
 
 		public void Disconnect()
 		{
-			_cancelTokenS.Cancel();
+			
+			_cancelTokenS?.Cancel();
 			//Thread.Sleep(100);
 			//_sickSock.Disconnect(true);
 			SensorSystemAvailable = false;
-		}
-		static string get_encoded_cmd(string str)
-		{
-			return "\x02" + str + "\x03";
+			if(_sickSock != null && _sickSock.Connected)
+			{
+				_sickSock?.Disconnect(true);
+			}
 		}
 
 		static byte[] get_encoded_bytes(string str)
@@ -131,7 +150,7 @@ namespace TSUImageCollectSystem.DeviceSystems
 		{
 			channel_data_16b chdata = new channel_data_16b();
 			string newData = data.Substring(84);
-			string []splitLines = newData.Split(" ".ToCharArray());
+			string[] splitLines = newData.Split(" ".ToCharArray());
 			chdata.content = splitLines[0];
 
 			float.TryParse(splitLines[1], out chdata.scale_factor);
@@ -139,15 +158,48 @@ namespace TSUImageCollectSystem.DeviceSystems
 			chdata.start_angle = Convert.ToUInt32(splitLines[3], 16);
 			chdata.steps = Convert.ToUInt32(splitLines[4], 16);
 			chdata.amnt_data = Convert.ToUInt32(splitLines[5], 16);
-			
+
 			if (chdata.amnt_data != 0)
 			{
 				for (int i = 0; i < chdata.amnt_data; i++)
 				{
-					chdata.data[i] = Convert.ToUInt32(splitLines[6+i], 16);
+					chdata.data[i] = Convert.ToUInt32(splitLines[6 + i], 16);
 				}
 			}
 			return chdata;
+		}
+
+		private class ConsecutiveFieldEvalCheck
+		{
+
+			int number_of_3E = 0;
+			CancellationTokenSource m_ct = new CancellationTokenSource();
+
+			public bool CheckIsCar(byte[] data, int max_data_count)
+			{
+				bool is3E = data[64] == '3' && data[65] == 'E';
+				Trace.WriteLine("Checking...");
+				if (is3E)
+				{
+					m_ct.Cancel();
+					Task.Factory.StartNew(async () =>
+					{
+						await Task.Delay(25, m_ct.Token);
+						Trace.WriteLine("After delay...");
+						if (!m_ct.Token.IsCancellationRequested)
+						{
+							this.number_of_3E = 0;
+							Trace.WriteLine("NofE Reset to zero...");
+						}
+					}, m_ct.Token).Start();
+					number_of_3E++;
+					Trace.WriteLine("NofE: {0}", number_of_3E);
+					Trace.WriteLineIf(data[64] == '3' && data[65] == 'E' && number_of_3E == max_data_count, "Condition fulfilled...");
+					return is3E && number_of_3E == max_data_count;
+				}
+				return false;
+			}
+
 		}
 
 		bool checkIsCar()
@@ -166,6 +218,10 @@ namespace TSUImageCollectSystem.DeviceSystems
 			return point >= MaxPointCount;
 		}
 
+		public const string CMD_device_intent = "sRN DeviceIdent";
+		public const string CMD_scandata_once = "sRN LMDscandata";
+		public const string CMD_scandata_cont = "sEN LMDscandata 1";
+		ConsecutiveFieldEvalCheck _field_eval_check = new ConsecutiveFieldEvalCheck();
 		private void DoSensorDataProcessing(CancellationToken ct, Socket sickSock)
 		{
 			//while (!ct.IsCancellationRequested)
@@ -173,41 +229,46 @@ namespace TSUImageCollectSystem.DeviceSystems
 				try
 				{
 					//sickSock.Connect(ip);
-					byte[] m_read_bytes = new byte[4096];
-					byte[] sentBytes = get_encoded_bytes("sRN DeviceIdent");
+					byte[] m_read_bytes = new byte[8 * 1024];
+					byte[] sentBytes = get_encoded_bytes(CMD_device_intent);
 					int sentBytesCount = sickSock.Send(sentBytes);
 					if (sentBytesCount != sentBytes.Length)
 						return;
 					int readBytesCount = sickSock.Receive(m_read_bytes);
 
-					if ((readBytesCount < 0 || m_read_bytes[1] != 's' || m_read_bytes[2] != 'R' || m_read_bytes[3] != 'A'))
+					if ((readBytesCount < 0 || m_read_bytes[1] != 's' || m_read_bytes[2] != 'R' || m_read_bytes[3] != 'A')) //sRA means device reads the values and successfully acknowledges
 					{
 						return;
 					}
 
 					SensorSystemAvailable = true;
 
-					sentBytes = get_encoded_bytes("sRN LMDscandata");
+					sentBytes = get_encoded_bytes(CMD_scandata_once);
 					sentBytesCount = sickSock.Send(sentBytes);
 
 					readBytesCount = sickSock.Receive(m_read_bytes);
 					int scanDataSize = readBytesCount;
 
-					if (m_read_bytes[1] == 's' && m_read_bytes[2] == 'R' && m_read_bytes[3] == 'A')
-					{
-						//auto cc = m_read_bytes.data() + 84;
-						m_reference = get_only_1_scan_data(Encoding.ASCII.GetString(m_read_bytes));
-						if (SICKReferenceSet != null)
-							SICKReferenceSet(m_reference);
-						//int midPoint = m_reference.amnt_data / 2;
-						//memcpy(m_ref_data, m_reference.data.get()[midPoint - 2], 4 * sizeof(u32));
-						//JLOG_D(cc);
-					}
+					//This portion is for reference...
+					//Not required now...
+					//if (m_read_bytes[1] == 's' && m_read_bytes[2] == 'R' && m_read_bytes[3] == 'A')
+					//{
+					//	//auto cc = m_read_bytes.data() + 84;
+					//	m_reference = get_only_1_scan_data(Encoding.ASCII.GetString(m_read_bytes));
+					//	if (SICKReferenceSet != null)
+					//		SICKReferenceSet(m_reference);
+					//	//int midPoint = m_reference.amnt_data / 2;
+					//	//memcpy(m_ref_data, m_reference.data.get()[midPoint - 2], 4 * sizeof(u32));
+					//	//JLOG_D(cc);
+					//}
+					//Reference Set
 
-					sentBytes = get_encoded_bytes("sEN LMDscandata 1");
-					sentBytesCount = sickSock.Send(sentBytes);
+					sentBytes = get_encoded_bytes(CMD_scandata_cont);
+					sentBytesCount = sickSock.Send(sentBytes);//sEN LMDscandata 1
 
 					readBytesCount = sickSock.Receive(m_read_bytes, sentBytes.Length, SocketFlags.None);
+					//sEA LMDscandata 1
+					int consecutive_3E_count = 0;
 					do
 					{
 						//readBytesCount = sickSock.Receive(m_read_bytes);
@@ -218,25 +279,44 @@ namespace TSUImageCollectSystem.DeviceSystems
 							//std::cout << resp << endl;
 							if (readBytesCount > 84 && m_read_bytes[1] == 's' && m_read_bytes[2] == 'S' && m_read_bytes[3] == 'N')
 							{
-								m_current_data = get_only_1_scan_data(Encoding.ASCII.GetString(m_read_bytes));
+								//m_current_data = get_only_1_scan_data(Encoding.ASCII.GetString(m_read_bytes));
 								if (WillNotify)
 								{
-									if (SICKDataNotification != null)
-										SICKDataNotification(m_current_data);
+									bool is3EOutputDetected = m_read_bytes[64] == '3' && m_read_bytes[65] == 'E';
+									SICKDataNotification?.Invoke(m_current_data);
 
-									if (SICKCarIncoming != null && checkIsCar())
+									if (is3EOutputDetected)
 									{
-										SICKCarIncoming();
+										if (++consecutive_3E_count == MaxPointCount)
+											SICKCarIncoming?.Invoke();
 									}
-								}
-								if (SetReference)
-								{
-									m_reference = m_current_data.Copy();
-									if (SICKReferenceSet != null)
-										SICKReferenceSet(m_reference);
-									SetReference = false;
+									else if(consecutive_3E_count != 0)
+									{
+										Helpers.Log.LogThisInfo("Consecutive count: {0}", consecutive_3E_count);
+										consecutive_3E_count = 0;
+									}
+									//if (SICKCarIncoming != null && checkIsCar())
+									//{
+									//	SICKCarIncoming();
+									//}
 
+									//if (_field_eval_check.CheckIsCar(m_read_bytes, MaxPointCount))
+									//{
+									//	SICKCarIncoming?.Invoke();
+									//}
 								}
+
+								//This portion is for reference...
+								//Not required now...
+								//if (SetReference)
+								//{
+								//	m_reference = m_current_data.Copy();
+								//	if (SICKReferenceSet != null)
+								//		SICKReferenceSet(m_reference);
+								//	SetReference = false;
+
+								//}
+								//Reference set
 							}
 						}
 					} while (SensorSystemAvailable && !ct.IsCancellationRequested);
@@ -244,11 +324,11 @@ namespace TSUImageCollectSystem.DeviceSystems
 				}
 				catch (SocketException sex)
 				{
-					Helpers.Log.LogThisError("EXCEPTION: " + sex.Message);
+					Helpers.Log.LogThisError("EXCEPTION: {0}" + sex.Message);
 				}
 				catch (Exception ex)
 				{
-					Helpers.Log.LogThisWarn("Exception...", ex.Message);
+					Helpers.Log.LogThisWarn("Exception: {0}", ex.Message);
 					//throw;
 				}
 			}

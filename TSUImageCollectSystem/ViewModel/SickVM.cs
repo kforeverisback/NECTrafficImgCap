@@ -57,16 +57,17 @@ namespace TSUImageCollectSystem.ViewModel
 			set { _SICKReferenceBtnEnabled = value; RaisePropertyChanged("SICKReferenceBtnEnabled"); }
 		}
 
-		public int DataCountUsed
+		const int MaxDataCheckCount = 50, MinDataCheckCount = 1;
+		public int DataCheckCountUsed
 		{
 			get { return _ss.MaxPointCount; }
 			set
 			{
-				if(value <= RefDataAmount && value > 0)
+				if(value <= MaxDataCheckCount && value > 0)
 				{
 					_ss.MaxPointCount = value;
 				}
-				RaisePropertyChanged("DataCountUsed");
+				RaisePropertyChanged("DataCheckCountUsed");
 			} }
 
 
@@ -79,12 +80,13 @@ namespace TSUImageCollectSystem.ViewModel
 		public SickVM()
 		{
 			_ss = new SICKSystem();
-			_ss.SICKReferenceSet += (refData) =>
-			{
-				RefDataAmount = (int)refData.amnt_data;
-				DataCountUsed = (int)Math.Floor(RefDataAmount / 2.00)+1;
-				RaisePropertyChanged("RefDataAmount");
-			};
+			DataCheckCountUsed = Helpers.Args.DefaultArgs.DataCheckCount;
+			//_ss.SICKReferenceSet += (refData) =>
+			//{
+			//	RefDataAmount = (int)refData.amnt_data;
+			//	DataCheckCountUsed = (int)Math.Floor(RefDataAmount / 2.00)+1;
+			//	RaisePropertyChanged("RefDataAmount");
+			//};
 
 			_ss.SICKCarIncoming += () => 
 			{
@@ -111,11 +113,11 @@ namespace TSUImageCollectSystem.ViewModel
 			//});
 
 			RefDataAmount = 0;
-			DataCountUsed = 0;
+			DataCheckCountUsed = 0;
 			SICKReferenceBtnEnabled = SICKStopBtnEnabled = false;
 			SICKStartBtnEnabled = true;
-			DelayBetweenCars = 2000;
-			IPAddress = "168.169.170.200";
+			DelayBetweenCars = Helpers.Args.DefaultArgs.DelayOfCar; //Default Values
+			IPAddress = Helpers.Args.DefaultArgs.IPAddress; //Default Values
 			StartSickSensor = new RelayCommand(async () =>
 			{
 				SICKStartBtnEnabled = false;

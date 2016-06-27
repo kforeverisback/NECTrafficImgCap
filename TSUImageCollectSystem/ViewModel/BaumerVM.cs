@@ -22,6 +22,13 @@ namespace TSUImageCollectSystem.ViewModel
 		public string LastCarFolderName
 		{ get; private set; }
 
+		const int _max_capture_count = 25, _min_capture_count = 1;
+		public int BatchCaptureCount
+		{
+			get { return BSParameters.BatchCaptureCount; }
+			set { BSParameters.BatchCaptureCount = Helpers.Utility.Clamp(value, _min_capture_count, _max_capture_count); RaisePropertyChanged("BatchCaptureCount"); }
+		}
+
 		public int _ExposureInMs;
 		public int ExposureInMs
 		{
@@ -36,6 +43,14 @@ namespace TSUImageCollectSystem.ViewModel
 			get
 			{ return _TriggerDelay; }
 			set { _TriggerDelay = _bs.SetTriggerDelay(value); RaisePropertyChanged("TriggerDelay"); }
+		}
+
+		public int _CaptureDelay;
+		public int CaptureDelay
+		{
+			get
+			{ return _CaptureDelay; }
+			set { _CaptureDelay = value; RaisePropertyChanged("CaptureDelay"); }
 		}
 
 		public string OutputPath
@@ -80,18 +95,18 @@ namespace TSUImageCollectSystem.ViewModel
 				});
 
 				Helpers.Log.LogThisInfo("Finished Enabling!");
-				if (_bs.Status == BaumerStatus.Ready)
-				{
+				//if (_bs.Status == BaumerStatus.Ready)
+				//{
 
-					ExposureInMs = (int)_bs.Parameters.ExposureValue;
-					TriggerDelay = (int)_bs.Parameters.TriggerDelay;
-				}
-				else
-				{
-					ExposureInMs = -1;
-					TriggerDelay = -1;
-					Helpers.Utility.ShowError("Baumer System not initialized");
-				}
+				//	ExposureInMs = (int)_bs.Parameters.ExposureValue;
+				//	TriggerDelay = (int)_bs.Parameters.TriggerDelay;
+				//}
+				//else
+				//{
+				//	ExposureInMs = -1;
+				//	TriggerDelay = -1;
+				//	Helpers.Utility.ShowError("Baumer System not initialized");
+				//}
 				StopBaumerEnabled = !StartBaumerEnabled;
 				CaptureBaumerEnabled = !StartBaumerEnabled;
 			}/*, ()=> { return !_bs.IsProcessing && (_bs.Status == BaumerStatus.Stopped || _bs.Status == BaumerStatus.Uninitiated); }*/);
@@ -109,26 +124,29 @@ namespace TSUImageCollectSystem.ViewModel
 		   {
 			   if (_bs.Status != BaumerStatus.Ready) return;
 
-			   StopBaumerEnabled = false;
-			   CaptureBaumerEnabled = false;
+			   
 			   //Send to LED
 			   /*For now data sending */
 			   //Messenger.Default.Send<Gardasoft.Controller.API.Model.Register.ChannelMode>(Gardasoft.Controller.API.Model.Register.ChannelMode.Continuous);
 			   //Send to SICK
 			   //Messenger.Default.Send<SickVM.Resp>(SickVM.Resp.Capturing);
-			   await Task.Factory.StartNew(() =>
+			   await Task.Factory.StartNew(async () =>
 			   {
 				   //for (int i = 0; i < 50; i++ )
 				   {
+					   StopBaumerEnabled = false;
+					   CaptureBaumerEnabled = false;
+					   await Task.Delay(CaptureDelay);
 					   _bs.DoCapture();
+					   StopBaumerEnabled = true;
+					   CaptureBaumerEnabled = true;
 					   //_bs.CaptureInBatch();
 					   //_bs.CaptureAndSaveSingleFrame();
 				   }
 			   });
 			   //Messenger.Default.Send<SickVM.Resp>(SickVM.Resp.CapturingFinished);
 			   //Messenger.Default.Send<Gardasoft.Controller.API.Model.Register.ChannelMode>(Gardasoft.Controller.API.Model.Register.ChannelMode.Switched);
-			   StopBaumerEnabled = true;
-			   CaptureBaumerEnabled = true;
+			   
 		   }/*, ()=> { return !_bs.IsProcessing && (_bs.Status == BaumerStatus.Ready && _bs.Status != BaumerStatus.Capturing); }*/);
 
 			Messenger.Default.Register<SickVM.Cmds>(this, (cmd) =>
@@ -151,14 +169,15 @@ namespace TSUImageCollectSystem.ViewModel
 				}
 			});
 
-
-			System.Timers.Timer t = new System.Timers.Timer(1000);
-			t.AutoReset = true;
-			t.Elapsed += (s, e) =>
-			{
-				System.Diagnostics.Debug.WriteLine("{0}", e.SignalTime.ToShortTimeString());
-			};
-			t.Enabled = true;
+			CaptureDelay = Helpers.Args.DefaultArgs.CaptureDelay;
+			ExposureInMs = Helpers.Args.DefaultArgs.Exposure;
+			//System.Timers.Timer t = new System.Timers.Timer(1000);
+			//t.AutoReset = true;
+			//t.Elapsed += (s, e) =>
+			//{
+			//	System.Diagnostics.Debug.WriteLine("{0}", e.SignalTime.ToShortTimeString());
+			//};
+			//t.Enabled = true;
 		}
 
 		~BaumerVM()

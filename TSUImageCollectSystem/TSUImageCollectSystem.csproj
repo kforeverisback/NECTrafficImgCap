@@ -16,7 +16,7 @@
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>x86</PlatformTarget>
+    <PlatformTarget>x64</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
@@ -27,7 +27,7 @@
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>x86</PlatformTarget>
+    <PlatformTarget>x64</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
@@ -37,21 +37,9 @@
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="bgapi2_genicam_dotnet, Version=2.3.7670.7763, Culture=neutral, processorArchitecture=x86">
+    <Reference Include="bgapi2_genicam_dotnet, Version=2.3.9492.9636, Culture=neutral, processorArchitecture=AMD64">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>E:\baumertest64\bgapi2_genicam_dotnet.dll</HintPath>
-    </Reference>
-    <Reference Include="Gardasoft.Controller.API, Version=3.0.0.1032, Culture=neutral, PublicKeyToken=3c364760d6170a1b, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\..\..\Program Files\Gardasoft Vision\Triniti\SDK\ReferencedAssemblies\Gardasoft.Controller.API.dll</HintPath>
-    </Reference>
-    <Reference Include="Gardasoft.Device.CommunicationLayer, Version=3.0.0.1032, Culture=neutral, PublicKeyToken=3c364760d6170a1b, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\..\..\Program Files\Gardasoft Vision\Triniti\SDK\ReferencedAssemblies\Gardasoft.Device.CommunicationLayer.DLL</HintPath>
-    </Reference>
-    <Reference Include="Gardasoft.Device.Discovery, Version=3.0.0.1032, Culture=neutral, PublicKeyToken=3c364760d6170a1b, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\..\..\Program Files\Gardasoft Vision\Triniti\SDK\ReferencedAssemblies\Gardasoft.Device.Discovery.DLL</HintPath>
+      <HintPath>..\Components\Dev\C_Sharp\x64\bgapi2_genicam_dotnet.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
@@ -76,14 +64,16 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="DeviceSystems\GardaSystem.cs" />
+    <None Include="DeviceSystems\GardaSystem.cs" />
     <Compile Include="DeviceSystems\SICKSystem.cs" />
+    <Compile Include="Helpers\Args.cs" />
     <Compile Include="Helpers\Log.cs" />
     <Compile Include="DeviceSystems\BaumerSystem.cs" />
+    <Compile Include="Helpers\Options.cs" />
     <Compile Include="Helpers\Utility.cs" />
     <Compile Include="ImageGroupingManager.cs" />
     <Compile Include="ViewModel\BaumerVM.cs" />
-    <Compile Include="ViewModel\GardaVM.cs" />
+    <None Include="ViewModel\GardaVM.cs" />
     <Compile Include="ViewModel\MainVM.cs" />
     <Compile Include="ViewModel\SickVM.cs" />
     <Page Include="MainWindow.xaml">

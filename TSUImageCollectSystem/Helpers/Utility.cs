@@ -35,26 +35,42 @@ namespace TSUImageCollectSystem.Helpers
 			return DateTime.Now.ToString("yyyyMMdd_HHmmss_fff");
 		}
 
-		public static Bitmap GetGrayBitmap(int width, int height, int stride, IntPtr ptr0)
+		public static int Clamp(int value, int min, int max)
 		{
+			return (value < min) ? min : (value > max) ? max : value;
+		}
+
+		static Color[] _saved_entries;
+		public static Bitmap GetGrayBitmap(int width, int height, IntPtr ptr0)
+		{
+			byte[] bytesImg = new byte[width * height];
+			Marshal.Copy(ptr0, bytesImg, 0, width * height);
+
 			Bitmap bmp = new Bitmap(width, height, PixelFormat.Format8bppIndexed);
 			ColorPalette palette = bmp.Palette;
 			Color[] _entries = palette.Entries;
-			for (int i = 0; i < 256; i++)
+			if (_saved_entries == null)
 			{
-				Color b = new Color();
-				b = Color.FromArgb((byte)i, (byte)i, (byte)i);
-				_entries[i] = b;
+				_saved_entries = new Color[_entries.Length];
+				for (int i = 0; i < 256; i++)
+				{
+					Color b = new Color();
+					b = Color.FromArgb((byte)i, (byte)i, (byte)i);
+					_entries[i] = b;
+				}
+				Array.Copy(_entries, _saved_entries, _entries.Length);
 			}
+			else
+			{
+				Array.Copy(_saved_entries, _entries, _entries.Length);
+			}
+
 			bmp.Palette = palette;
 
-			byte[] bytesImg = new byte[stride];
-			Marshal.Copy(ptr0, bytesImg, 0, stride);
-
-			BitmapData bdata =  bmp.LockBits(new Rectangle(0, 0, bmp.Width, bmp.Height), ImageLockMode.WriteOnly, PixelFormat.Format8bppIndexed);
+			BitmapData bdata =  bmp.LockBits(new Rectangle(0, 0, bmp.Width, bmp.Height), ImageLockMode.ReadWrite, PixelFormat.Format8bppIndexed);
 
 			IntPtr ptr = bdata.Scan0;
-			Marshal.Copy(bytesImg, 0, ptr, stride);
+			Marshal.Copy(bytesImg, 0, ptr, width * height);
 			bmp.UnlockBits(bdata);
 
 			return bmp;
