@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:TSUImageCollectSystem"
         mc:Ignorable="d"
-        Title="MainWindow" Width="550" ResizeMode="NoResize" Background="#FFD6D6D6"
+        Title="TSU Image Acquisition" Width="550" ResizeMode="NoResize" Background="#FFD6D6D6"
         DataContext="{StaticResource mainVM}" SizeToContent="Height">
     <Window.Resources>
         <Style x:Key="txtBoxStyle" TargetType="TextBox">
@@ -63,11 +63,11 @@
                             <TextBox Style="{StaticResource txtBoxStyle}" Margin="0,0,5,0" Text="{Binding BatchCaptureCount, Mode=TwoWay, 
                             UpdateSourceTrigger=LostFocus}" PreviewTextInput="TextBox_CheckForNumbersOnly"/>
                             <Label Content="Exposure(us): "/>
-                            <TextBox Style="{StaticResource txtBoxStyle}" Margin="0,0,5,0" Text="{Binding ExposureInMs, Mode=TwoWay, FallbackValue=4000, UpdateSourceTrigger=LostFocus}" PreviewTextInput="TextBox_CheckForNumbersOnly"/>
+                            <TextBox Style="{StaticResource txtBoxStyle}" Margin="0,0,5,0" Text="{Binding ExposureInMs, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" PreviewTextInput="TextBox_CheckForNumbersOnly"/>
                             <Label Content="Capture Delay(us): "/>
                             <TextBox Style="{StaticResource txtBoxStyle}" Margin="0,0,5,0" Text="{Binding CaptureDelay, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" PreviewTextInput="TextBox_CheckForNumbersOnly"/>
                             <Label Content="Trigger Delay(us): "/>
-                            <TextBox Style="{StaticResource txtBoxStyle}" Margin="0,0,5,0" Text="{Binding TriggerDelay, Mode=TwoWay, FallbackValue=4000, UpdateSourceTrigger=LostFocus}" PreviewTextInput="TextBox_CheckForNumbersOnly"/>
+                            <TextBox Style="{StaticResource txtBoxStyle}" Margin="0,0,5,0" Text="{Binding TriggerDelay, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" PreviewTextInput="TextBox_CheckForNumbersOnly"/>
                         </UniformGrid>
                     </StackPanel>
                 </GroupBox>

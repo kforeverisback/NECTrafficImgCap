@@ -29,20 +29,18 @@ namespace TSUImageCollectSystem.ViewModel
 			set { BSParameters.BatchCaptureCount = Helpers.Utility.Clamp(value, _min_capture_count, _max_capture_count); RaisePropertyChanged("BatchCaptureCount"); }
 		}
 
-		public int _ExposureInMs;
 		public int ExposureInMs
 		{
 			get
-			{ return _ExposureInMs; }
-			set { _ExposureInMs = _bs.SetExposure(value); RaisePropertyChanged("ExposureInMs"); }
+			{ return (int)BSParameters.ExposureValue; }
+			set { _bs.SetExposure(value); RaisePropertyChanged("ExposureInMs"); }
 		}
 
-		public int _TriggerDelay;
 		public int TriggerDelay
 		{
 			get
-			{ return _TriggerDelay; }
-			set { _TriggerDelay = _bs.SetTriggerDelay(value); RaisePropertyChanged("TriggerDelay"); }
+			{ return (int)BSParameters.TriggerDelay; }
+			set { _bs.SetTriggerDelay(value); RaisePropertyChanged("TriggerDelay"); }
 		}
 
 		public int _CaptureDelay;
@@ -170,7 +168,7 @@ namespace TSUImageCollectSystem.ViewModel
 			});
 
 			CaptureDelay = Helpers.Args.DefaultArgs.CaptureDelay;
-			ExposureInMs = Helpers.Args.DefaultArgs.Exposure;
+			//ExposureInMs = Helpers.Args.DefaultArgs.Exposure;
 			//System.Timers.Timer t = new System.Timers.Timer(1000);
 			//t.AutoReset = true;
 			//t.Elapsed += (s, e) =>
